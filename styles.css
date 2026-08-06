@@ -1277,6 +1277,11 @@ body { background: var(--bg); }
 .sidebar-link span { display: grid; width: 22px; place-items: center; color: #596075; font-size: 1.3rem; font-weight: 400; }
 .sidebar-link.active { color: var(--brand); background: linear-gradient(100deg, #f0ebff, #faf8ff); font-weight: 750; }
 .sidebar-link.active span { color: var(--brand); }
+.notif-permission-button { display: flex; align-items: center; gap: 10px; width: 100%; margin: 2px 0 0; padding: 10px 20px; color: #6236dd; background: #f3efff; border: 1px solid #ece4ff; border-radius: 12px; font-size: .82rem; font-weight: 650; text-align: left; }
+.notif-permission-button:disabled { color: #8b90a0; background: transparent; border-color: var(--line); cursor: default; }
+html[data-theme="dark"] .notif-permission-button { color: #c9b8ff; background: rgba(120, 80, 239, .16); border-color: rgba(120, 80, 239, .3); }
+html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; background: transparent; }
+
 .theme-link { display: flex; align-items: center; gap: 14px; width: 100%; margin-top: auto; padding: 10px 20px; color: #555b6b; background: transparent; font-size: .86rem; font-weight: 650; text-align: left; }
 .theme-link span:first-child { color: #f3a715; font-size: 1.35rem; }.theme-link span:last-child { margin-left: auto; font-size: 1.6rem; font-weight: 400; }
 

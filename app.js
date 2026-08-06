@@ -125,6 +125,7 @@ function pomodoroTick() {
     }
   }
   renderPomodoro();
+  savePomodoroState();
 }
 
 function startPomodoro() {
@@ -132,6 +133,7 @@ function startPomodoro() {
   pomodoroState.running = true;
   pomodoroState.intervalId = window.setInterval(pomodoroTick, 1000);
   renderPomodoro();
+  savePomodoroState();
 }
 
 function stopPomodoro() {
@@ -139,6 +141,7 @@ function stopPomodoro() {
   if (pomodoroState.intervalId) window.clearInterval(pomodoroState.intervalId);
   pomodoroState.intervalId = null;
   renderPomodoro();
+  savePomodoroState();
 }
 
 function resetPomodoro() {
@@ -146,6 +149,61 @@ function resetPomodoro() {
   pomodoroState.mode = "work";
   pomodoroState.remaining = POMODORO_WORK_SECONDS;
   renderPomodoro();
+  savePomodoroState();
+}
+
+// --- Persisting the Pomodoro timer across page reloads --------------------
+// We never trust the ticking "remaining" value across a reload (the JS
+// interval is destroyed the moment the page unloads). Instead we store the
+// wall-clock timestamp the current segment ends at, then recompute
+// "remaining" from real elapsed time whenever the app (re)starts — that way
+// refreshing the page, closing the tab, or the phone screen locking doesn't
+// reset or desync the countdown.
+const POMODORO_STORAGE_KEY = "pomodoroState:v1";
+
+function savePomodoroState() {
+  try {
+    localStorage.setItem(POMODORO_STORAGE_KEY, JSON.stringify({
+      mode: pomodoroState.mode,
+      running: pomodoroState.running,
+      remaining: pomodoroState.remaining,
+      endAt: pomodoroState.running ? Date.now() + pomodoroState.remaining * 1000 : null,
+    }));
+  } catch (error) {
+    // Storage may be unavailable (e.g. private browsing) — the timer still
+    // works for the current tab session, it just won't survive a reload.
+  }
+}
+
+function loadPomodoroState() {
+  let saved = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(POMODORO_STORAGE_KEY));
+  } catch (error) {
+    saved = null;
+  }
+  if (!saved) return;
+
+  pomodoroState.mode = saved.mode === "break" ? "break" : "work";
+
+  if (saved.running && saved.endAt) {
+    const remainingNow = Math.round((saved.endAt - Date.now()) / 1000);
+    if (remainingNow > 0) {
+      // Still mid-segment — resume the countdown from real elapsed time
+      // instead of restarting it from the full duration.
+      pomodoroState.remaining = remainingNow;
+      pomodoroState.running = true;
+      pomodoroState.intervalId = window.setInterval(pomodoroTick, 1000);
+    } else {
+      // The segment finished while the page was closed/reloaded — land on
+      // "time's up" for it rather than silently resetting to a full timer.
+      pomodoroState.remaining = 0;
+      pomodoroState.running = false;
+    }
+  } else {
+    pomodoroState.remaining = Number.isFinite(saved.remaining) ? saved.remaining : POMODORO_WORK_SECONDS;
+    pomodoroState.running = false;
+  }
 }
 
 const els = {
@@ -176,6 +234,7 @@ const els = {
   pomodoroStartButton: document.querySelector("#pomodoroStartButton"),
   pomodoroStopButton: document.querySelector("#pomodoroStopButton"),
   pomodoroResetButton: document.querySelector("#pomodoroResetButton"),
+  notifPermissionButton: document.querySelector("#notifPermissionButton"),
   appShell: document.querySelector(".app-shell"),
   tasksPanel: document.querySelector("#tasksPanel"),
   tasksTab: document.querySelector("#tasksTab"),
@@ -822,8 +881,49 @@ function playReminderSound() {
 
 function requestReminderNotificationPermission() {
   if (window.AndroidNotifications || !("Notification" in window)) return;
-  if (Notification.permission === "default") Notification.requestPermission().catch(() => {});
+  if (Notification.permission === "default") {
+    // Browsers increasingly refuse to show the permission prompt at all
+    // when it isn't triggered by a direct user click (it just silently
+    // stays "default" forever) — this automatic attempt on login covers
+    // browsers that still allow it, and updateNotifPermissionButton()
+    // below shows a real "Увімкнути сповіщення" button as a fallback for
+    // the ones that don't, so task-time notifications aren't silently lost.
+    Notification.requestPermission().finally(updateNotifPermissionButton).catch(() => {});
+  }
+  updateNotifPermissionButton();
 }
+
+// Reflects (and lets the user fix) the actual browser notification
+// permission — a task reminder can only ever show a system notification if
+// this is "granted". If the permission was never actually granted (e.g. the
+// automatic prompt above got silently ignored by the browser, or the user
+// dismissed it once), reminders will fire internally but no notification
+// will ever appear, which is exactly the "missing notification" symptom.
+function updateNotifPermissionButton() {
+  const button = els.notifPermissionButton;
+  if (!button) return;
+  if (window.AndroidNotifications || !("Notification" in window)) {
+    button.hidden = true;
+    return;
+  }
+  button.hidden = false;
+  const permission = Notification.permission;
+  if (permission === "granted") {
+    button.textContent = "🔔 Сповіщення увімкнено";
+    button.disabled = true;
+  } else if (permission === "denied") {
+    button.textContent = "🔕 Сповіщення заблоковано — дозвольте в налаштуваннях сайту в браузері";
+    button.disabled = true;
+  } else {
+    button.textContent = "🔔 Увімкнути сповіщення";
+    button.disabled = false;
+  }
+}
+
+els.notifPermissionButton?.addEventListener("click", () => {
+  if (!("Notification" in window)) return;
+  Notification.requestPermission().finally(updateNotifPermissionButton).catch(() => {});
+});
 
 function highlightReminderTaskInView(taskId) {
   const item = els.taskList?.querySelector(`.task-item[data-task-id="${CSS.escape(String(taskId))}"]`)
@@ -2369,7 +2469,9 @@ els.micButton.addEventListener("click", () => startVoiceInput());
 els.pomodoroStartButton?.addEventListener("click", startPomodoro);
 els.pomodoroStopButton?.addEventListener("click", stopPomodoro);
 els.pomodoroResetButton?.addEventListener("click", resetPomodoro);
+loadPomodoroState();
 renderPomodoro();
+updateNotifPermissionButton();
 
 els.logoutButton?.addEventListener("click", async () => {
   if (!supabaseClient) return;
