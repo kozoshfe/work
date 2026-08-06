@@ -259,6 +259,14 @@ const els = {
   accessError: document.querySelector("#accessError"),
   logoutButton: document.querySelector("#logoutButton"),
   themeToggleButton: document.querySelector("#themeToggleButton"),
+  dailyLogWidget: document.querySelector("#dailyLogWidget"),
+  dailyLogList: document.querySelector("#dailyLogList"),
+  dailyLogEmpty: document.querySelector("#dailyLogEmpty"),
+  dailyLogInputRow: document.querySelector("#dailyLogInputRow"),
+  dailyLogInput: document.querySelector("#dailyLogInput"),
+  dailyLogAddButton: document.querySelector("#dailyLogAddButton"),
+  dailyLogMicButton: document.querySelector("#dailyLogMicButton"),
+  dailyLogStatus: document.querySelector("#dailyLogStatus"),
 };
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -282,6 +290,180 @@ const state = {
   tasks: [],
   trash: [],
 };
+
+// --- "Що робив сьогодні?" daily log widget --------------------------------
+// A lightweight, purely local (localStorage) list of things done today.
+// Entries are tagged with the date they were added on; only today's entries
+// are shown, so the list naturally starts empty again the next day.
+const DAILY_LOG_STORAGE_KEY = "dailyLogState:v1";
+let dailyLogEntries = [];
+let dailyLogRecognition = null;
+let dailyLogListening = false;
+
+function todayDateKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function loadDailyLog() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DAILY_LOG_STORAGE_KEY));
+    dailyLogEntries = Array.isArray(saved) ? saved : [];
+  } catch (error) {
+    dailyLogEntries = [];
+  }
+}
+
+function saveDailyLog() {
+  try {
+    localStorage.setItem(DAILY_LOG_STORAGE_KEY, JSON.stringify(dailyLogEntries));
+  } catch (error) {
+    // Storage may be unavailable (e.g. private browsing) — the list still
+    // works for the current tab session, it just won't survive a reload.
+  }
+}
+
+function renderDailyLog() {
+  if (!els.dailyLogList) return;
+  const today = todayDateKey();
+  const todaysEntries = dailyLogEntries.filter((entry) => entry.date === today);
+
+  els.dailyLogList.replaceChildren(
+    ...todaysEntries.map((entry) => {
+      const item = document.createElement("li");
+      item.className = "daily-log-item";
+
+      const text = document.createElement("span");
+      text.className = "daily-log-item-text";
+      text.textContent = entry.text;
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.className = "daily-log-item-remove";
+      removeButton.setAttribute("aria-label", "Видалити запис");
+      removeButton.textContent = "×";
+      removeButton.addEventListener("click", () => removeDailyLogEntry(entry.id));
+
+      item.append(text, removeButton);
+      return item;
+    }),
+  );
+
+  if (els.dailyLogEmpty) els.dailyLogEmpty.hidden = todaysEntries.length > 0;
+}
+
+function capitalizeFirstLetter(text) {
+  return text.length ? text[0].toLocaleUpperCase("uk-UA") + text.slice(1) : text;
+}
+
+function addDailyLogEntry(rawText) {
+  const text = capitalizeFirstLetter(String(rawText || "").trim());
+  if (!text) return;
+  dailyLogEntries.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, text, date: todayDateKey() });
+  saveDailyLog();
+  renderDailyLog();
+}
+
+function removeDailyLogEntry(id) {
+  dailyLogEntries = dailyLogEntries.filter((entry) => entry.id !== id);
+  saveDailyLog();
+  renderDailyLog();
+}
+
+function openDailyLogInput() {
+  if (!els.dailyLogInputRow) return;
+  els.dailyLogInputRow.hidden = false;
+  els.dailyLogInput.value = "";
+  els.dailyLogInput.focus();
+}
+
+function closeDailyLogInput() {
+  if (!els.dailyLogInputRow) return;
+  els.dailyLogInputRow.hidden = true;
+  els.dailyLogInput.value = "";
+}
+
+function submitDailyLogInput() {
+  const value = els.dailyLogInput.value.trim();
+  if (!value) {
+    closeDailyLogInput();
+    return;
+  }
+  addDailyLogEntry(value);
+  closeDailyLogInput();
+}
+
+// Voice dictation for the daily log runs "continuously": each pause in
+// speech finalizes one result, which becomes its own list entry, so saying
+// "Чистив нц" ... pause ... "Писав репорт" adds two separate items in one
+// mic session. Tap the mic again to stop listening.
+function setupDailyLogSpeechRecognition() {
+  if (!els.dailyLogMicButton) return;
+  if (!SpeechRecognition) {
+    els.dailyLogMicButton.disabled = true;
+    return;
+  }
+
+  dailyLogRecognition = new SpeechRecognition();
+  dailyLogRecognition.lang = "uk-UA";
+  dailyLogRecognition.continuous = true;
+  dailyLogRecognition.interimResults = false;
+  dailyLogRecognition.maxAlternatives = 1;
+
+  dailyLogRecognition.addEventListener("start", () => {
+    dailyLogListening = true;
+    els.dailyLogMicButton.classList.add("listening");
+    if (els.dailyLogStatus) els.dailyLogStatus.textContent = "Слухаю... Кажіть по одній справі за раз.";
+    playMicStartSound();
+  });
+
+  dailyLogRecognition.addEventListener("result", (event) => {
+    for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      const result = event.results[i];
+      if (!result.isFinal) continue;
+      const transcript = result[0].transcript.trim();
+      if (transcript) addDailyLogEntry(transcript);
+    }
+  });
+
+  dailyLogRecognition.addEventListener("error", (event) => {
+    if (event.error === "no-speech") return;
+    dailyLogListening = false;
+    els.dailyLogMicButton.classList.remove("listening");
+    if (els.dailyLogStatus) els.dailyLogStatus.textContent = "Не вдалося розпізнати голос. Спробуйте ще раз.";
+  });
+
+  dailyLogRecognition.addEventListener("end", () => {
+    if (dailyLogListening) {
+      // Some browsers auto-stop after each pause even with continuous=true —
+      // restart transparently so it truly feels like one ongoing session.
+      try {
+        dailyLogRecognition.start();
+        return;
+      } catch (error) {
+        // Fall through to a full stop below.
+      }
+    }
+    dailyLogListening = false;
+    els.dailyLogMicButton.classList.remove("listening");
+    playMicStopSound();
+    if (els.dailyLogStatus) els.dailyLogStatus.textContent = "";
+  });
+}
+
+function toggleDailyLogVoiceInput() {
+  if (!dailyLogRecognition) return;
+  if (dailyLogListening) {
+    dailyLogListening = false;
+    dailyLogRecognition.stop();
+    return;
+  }
+  try {
+    dailyLogRecognition.start();
+  } catch (error) {
+    // Already starting/running — ignore.
+  }
+}
 
 function fillReminderSelect(select, values, selected) {
   select.replaceChildren(...values.map(([value, text]) => new Option(text, value, value === selected, value === selected)));
@@ -2517,6 +2699,28 @@ if ("serviceWorker" in navigator) {
     });
   });
 }
+
+els.dailyLogAddButton?.addEventListener("click", () => {
+  if (els.dailyLogInputRow.hidden) {
+    openDailyLogInput();
+  } else {
+    submitDailyLogInput();
+  }
+});
+els.dailyLogInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") submitDailyLogInput();
+  if (event.key === "Escape") closeDailyLogInput();
+});
+els.dailyLogInput?.addEventListener("blur", () => {
+  window.setTimeout(() => {
+    if (document.activeElement !== els.dailyLogInput) closeDailyLogInput();
+  }, 120);
+});
+els.dailyLogMicButton?.addEventListener("click", toggleDailyLogVoiceInput);
+
+loadDailyLog();
+renderDailyLog();
+setupDailyLogSpeechRecognition();
 
 setupSpeechRecognition();
 setupNewReminderPicker();

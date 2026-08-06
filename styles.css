@@ -1782,6 +1782,184 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
   box-shadow: 0 8px 16px rgba(31, 157, 104, 0.18);
 }
 
+/* Daily log widget — "Що робив сьогодні?" list in the sidebar's open space */
+.daily-log-widget {
+  display: grid;
+  gap: 10px;
+  margin: 10px 4px 6px;
+  padding: 16px 16px 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.daily-log-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.daily-log-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: daily-log;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.daily-log-list:empty {
+  display: none;
+}
+
+.daily-log-item {
+  counter-increment: daily-log;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: #faf8ff;
+  border: 1px solid #f0ebff;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.daily-log-item::before {
+  content: counter(daily-log) ".";
+  flex-shrink: 0;
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.daily-log-item-text {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.daily-log-item-remove {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: #a7a3b8;
+  background: transparent;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.daily-log-item-remove:hover {
+  color: #fff;
+  background: #e4534f;
+}
+
+.daily-log-empty {
+  margin: 0;
+  padding: 6px 2px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.daily-log-empty[hidden] {
+  display: none;
+}
+
+.daily-log-input-row {
+  display: flex;
+  align-items: center;
+}
+
+.daily-log-input-row input {
+  min-height: 40px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: #faf8ff;
+  border: 1px solid #ece4ff;
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+
+.daily-log-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.daily-log-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 10px;
+  color: #4e5365;
+  background: #fff;
+  border: 1px solid #e3e3eb;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.daily-log-button:hover {
+  border-color: #d9cbff;
+}
+
+.daily-log-add span {
+  font-size: 1.15rem;
+  font-weight: 400;
+}
+
+.daily-log-mic {
+  width: 40px;
+  padding: 0;
+}
+
+.daily-log-mic svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.daily-log-mic.listening {
+  color: #fff;
+  background: var(--brand);
+  border-color: transparent;
+  animation: daily-log-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes daily-log-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(109, 67, 232, 0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(109, 67, 232, 0); }
+}
+
+.daily-log-status {
+  margin: 0;
+  min-height: 1em;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+html[data-theme="dark"] .daily-log-widget { background: #141926; border-color: rgba(255, 255, 255, 0.07); }
+html[data-theme="dark"] .daily-log-item { color: var(--ink); background: #1c2233; border-color: #2a3145; }
+html[data-theme="dark"] .daily-log-item::before { color: #b7a9ff; }
+html[data-theme="dark"] .daily-log-input-row input { color: var(--ink); background: #1c2233; border-color: #2a3145; }
+html[data-theme="dark"] .daily-log-button { color: #b7bcd0; background: #1c2233; border-color: #2a3145; }
+html[data-theme="dark"] .daily-log-button:hover { border-color: #4a3f8f; }
+html[data-theme="dark"] .daily-log-mic.listening { background: linear-gradient(135deg, #7a63f5, #5a3fd6); }
+
 /* ==========================================================================
    Dark theme — activated via <html data-theme="dark">
    ========================================================================== */
