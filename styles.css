@@ -1808,7 +1808,7 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
   padding: 0;
   list-style: none;
   counter-reset: daily-log;
-  max-height: 220px;
+  max-height: 371px;
   overflow-y: auto;
 }
 

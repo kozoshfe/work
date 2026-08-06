@@ -314,6 +314,53 @@ function loadDailyLog() {
   }
 }
 
+// --- Auto-clear "Що робив сьогодні?" at 22:00 every day --------------------
+// The list already stops showing yesterday's entries once the date rolls
+// over at midnight (see renderDailyLog's date filter), but the user wants
+// the log wiped earlier, at 22:00 local time, not at midnight. We track the
+// date of the last auto-clear so it only fires once per day, run it once on
+// load (covers the app being opened after 22:00), and schedule it to fire
+// automatically for as long as the app stays open.
+const DAILY_LOG_AUTO_CLEAR_HOUR = 22; // 22:00 local time
+const DAILY_LOG_LAST_AUTO_CLEAR_KEY = "dailyLogLastAutoClear:v1";
+
+function autoClearDailyLogIfDue() {
+  const now = new Date();
+  if (now.getHours() < DAILY_LOG_AUTO_CLEAR_HOUR) return;
+
+  const todayKey = todayDateKey();
+  let lastAutoClear = null;
+  try {
+    lastAutoClear = localStorage.getItem(DAILY_LOG_LAST_AUTO_CLEAR_KEY);
+  } catch (error) {
+    // Storage unavailable — fall through and clear anyway for this session.
+  }
+  if (lastAutoClear === todayKey) return; // already cleared today
+
+  dailyLogEntries = [];
+  saveDailyLog();
+  renderDailyLog();
+  try {
+    localStorage.setItem(DAILY_LOG_LAST_AUTO_CLEAR_KEY, todayKey);
+  } catch (error) {
+    // Ignore — worst case it clears again next time the app loads today.
+  }
+}
+
+function msUntilNextDailyLogAutoClear() {
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), DAILY_LOG_AUTO_CLEAR_HOUR, 0, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return next.getTime() - now.getTime();
+}
+
+function scheduleDailyLogAutoClear() {
+  window.setTimeout(() => {
+    autoClearDailyLogIfDue();
+    scheduleDailyLogAutoClear();
+  }, msUntilNextDailyLogAutoClear());
+}
+
 function saveDailyLog() {
   try {
     localStorage.setItem(DAILY_LOG_STORAGE_KEY, JSON.stringify(dailyLogEntries));
@@ -2719,8 +2766,10 @@ els.dailyLogInput?.addEventListener("blur", () => {
 els.dailyLogMicButton?.addEventListener("click", toggleDailyLogVoiceInput);
 
 loadDailyLog();
+autoClearDailyLogIfDue();
 renderDailyLog();
 setupDailyLogSpeechRecognition();
+scheduleDailyLogAutoClear();
 
 setupSpeechRecognition();
 setupNewReminderPicker();
