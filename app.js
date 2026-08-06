@@ -578,9 +578,12 @@ async function loadState() {
     if (!response.ok) throw new Error(await parseSupabaseError(response));
     rows = await response.json();
 
-    // Completed one-off tasks are not kept as history in the shared table.
+    // Completed one-off tasks that are still "active" (not yet archived) are
+    // not kept as history in the shared table. Archived ones (deleted_at set,
+    // i.e. already moved to state.trash) must be left alone, or the archive
+    // would get wiped on every reload.
     const completedOneOffIds = rows
-      .filter((row) => row.done && !row.recurrence)
+      .filter((row) => row.done && !row.recurrence && !row.deleted_at)
       .map((row) => row.id);
     if (completedOneOffIds.length) {
       const deleteResponse = await fetch(
