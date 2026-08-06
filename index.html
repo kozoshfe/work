@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#6236dd" />
+    <title>Робота</title>
+    <link rel="manifest" href="manifest.json?v=36" />
+    <link rel="icon" href="icons/icon.svg?v=27" type="image/svg+xml" />
+    <link rel="icon" href="icon-192.png?v=27" sizes="192x192" type="image/png" />
+    <link rel="icon" href="icon-512.png?v=27" sizes="512x512" type="image/png" />
+    <link rel="apple-touch-icon" href="icon-192.png?v=27" />
+    <link rel="stylesheet" href="styles.css?v=86" />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("theme");
+          var theme = saved === "dark" || saved === "light"
+            ? saved
+            : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (error) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+      })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Робота" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  </head>
+  <body class="access-locked auth-pending">
+    <section class="access-screen" id="accessScreen" aria-labelledby="accessTitle">
+      <form class="access-card" id="accessForm">
+        <span class="access-lock-icon" aria-hidden="true">⌁</span>
+        <h1 id="accessTitle">Вхід у Роботу</h1>
+        <p>Увійдіть через свій акаунт, як у CRM.</p>
+        <label class="access-label" for="accessEmail">Email</label>
+        <input id="accessEmail" type="email" autocomplete="email" placeholder="you@example.com" required />
+        <label class="access-label" for="accessPassword">Пароль</label>
+        <input id="accessPassword" type="password" autocomplete="current-password" placeholder="Введіть пароль" required />
+        <p class="access-error" id="accessError" role="alert" aria-live="polite"></p>
+        <button class="access-submit" type="submit">Увійти</button>
+      </form>
+    </section>
+    <main class="app-shell">
+      <aside class="sidebar" aria-label="Основна навігація">
+        <a class="brand" href="#tasksPanel" aria-label="Мій трекер, мої задачі">
+          <span class="brand-mark" aria-hidden="true">✓</span>
+          <span>Мій трекер</span>
+        </a>
+        <nav class="sidebar-nav">
+          <button class="sidebar-link active" id="tasksNav" type="button" aria-current="page"><span aria-hidden="true">◉</span>Мої задачі</button>
+          <button class="sidebar-link" id="calendarNav" type="button" aria-controls="calendarPanel"><span aria-hidden="true">□</span>Календар</button>
+          <button class="sidebar-link" id="archiveNav" type="button" aria-controls="archivePanel"><span aria-hidden="true">▱</span>Архів</button>
+        </nav>
+
+        <div class="pomodoro-widget" id="pomodoroWidget" aria-label="Таймер Помодоро">
+          <p class="pomodoro-mode" id="pomodoroMode">Робота</p>
+          <p class="pomodoro-time" id="pomodoroTime">45:00</p>
+          <div class="pomodoro-controls">
+            <button class="pomodoro-button pomodoro-start" id="pomodoroStartButton" type="button">Старт</button>
+            <button class="pomodoro-button pomodoro-stop" id="pomodoroStopButton" type="button" disabled>Стоп</button>
+            <button class="pomodoro-button pomodoro-reset" id="pomodoroResetButton" type="button">Ресет</button>
+          </div>
+        </div>
+
+        <button class="theme-link" id="themeToggleButton" type="button"><span class="theme-link-icon" aria-hidden="true">☾</span><span class="theme-link-label">Темна тема</span> <span aria-hidden="true">›</span></button>
+      </aside>
+
+      <section class="workspace">
+        <header class="app-header">
+          <h1>Мої задачі</h1>
+          <div class="header-actions">
+            <button class="header-logout-button" id="logoutButton" type="button">Вийти</button>
+          </div>
+        </header>
+        <div class="toolbar">
+          <label class="task-search" for="taskSearch"><span aria-hidden="true">⌕</span><input id="taskSearch" type="search" placeholder="Пошук задач..." autocomplete="off" /></label>
+          <div class="toolbar-actions">
+            <button class="new-task-button" id="addButton" type="button"><span aria-hidden="true">＋</span>Нова задача</button>
+            <button class="toolbar-mic-button" id="navMicButton" type="button" aria-label="Додати голосом" title="Додати голосом">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" /><path d="M19 11a7 7 0 0 1-14 0" /><path d="M12 18v3" /><path d="M8 21h8" /></svg>
+            </button>
+          </div>
+        </div>
+      <section class="content" id="tasksPanel" aria-labelledby="tasksTab">
+        <div class="section-heading">
+          <div class="task-filter-tabs" role="tablist" aria-label="Фільтр задач">
+            <button class="task-filter-tab active" type="button" role="tab" data-task-filter="all" aria-selected="true"><span class="filter-label">Всі</span><span class="filter-count" data-task-filter-count="all">0</span></button>
+            <button class="task-filter-tab" type="button" role="tab" data-task-filter="bookmarks" aria-selected="false"><span class="filter-label">Закладки</span><span class="filter-count" data-task-filter-count="bookmarks">0</span></button>
+            <button class="task-filter-tab" type="button" role="tab" data-task-filter="buy" aria-selected="false"><span class="filter-label">Купити</span><span class="filter-count" data-task-filter-count="buy">0</span></button>
+            <button class="task-filter-tab" type="button" role="tab" data-task-filter="laptops" aria-selected="false"><span class="filter-label">Ноутбуки</span><span class="filter-count" data-task-filter-count="laptops">0</span></button>
+          </div>
+        </div>
+        <div class="priority-groups" id="taskList"></div>
+      </section>
+      <section class="content" id="archivePanel" aria-label="Архів задач" hidden>
+        <ul class="task-list" id="archiveList"></ul>
+      </section>
+      <section class="content calendar-panel" id="calendarPanel" aria-label="Календар задач" hidden>
+        <div class="calendar-toolbar">
+          <button id="calendarPrevious" type="button" aria-label="Попередній місяць">‹</button>
+          <h2 id="calendarTitle"></h2>
+          <button id="calendarNext" type="button" aria-label="Наступний місяць">›</button>
+        </div>
+        <div class="calendar-weekdays" aria-hidden="true"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span></div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+      </section>
+
+    </main>
+
+    <div class="modal-backdrop" id="taskModal" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" hidden>
+      <section class="composer modal-card" aria-label="Додати нове завдання">
+        <div class="modal-heading">
+          <h2 id="taskModalTitle">Нове завдання</h2>
+          <button class="modal-close-button" id="closeTaskModalButton" type="button" aria-label="Закрити">×</button>
+        </div>
+        <label class="input-label" for="taskInput">Що потрібно зробити?</label>
+        <div class="input-row">
+          <input id="taskInput" type="text" placeholder="Наприклад: купити каву" autocomplete="off" />
+          <button class="icon-button mic-button" id="micButton" type="button" aria-label="Диктувати завдання" title="Диктувати завдання">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" />
+              <path d="M19 11a7 7 0 0 1-14 0" />
+              <path d="M12 18v3" />
+              <path d="M8 21h8" />
+            </svg>
+          </button>
+        </div>
+        <label class="reminder-toggle" for="newReminderEnabled">
+          <input id="newReminderEnabled" type="checkbox" />
+          Додати нагадування
+        </label>
+        <div class="new-reminder-options" id="taskReminder" hidden>
+          <div class="new-reminder-picker">
+            <select id="newReminderDay" aria-label="День"></select>
+            <select id="newReminderMonth" aria-label="Місяць"></select>
+            <select id="newReminderYear" aria-label="Рік"></select>
+            <select id="newReminderHour" aria-label="Година"></select>
+            <select id="newReminderMinute" aria-label="Хвилини"></select>
+          </div>
+          <label class="input-label repeat-label" for="taskRepeat">Повторювати</label>
+          <select class="repeat-select" id="taskRepeat" aria-label="Повторювати">
+            <option value="none">Не повторювати</option>
+            <option value="daily">Щодня</option>
+            <option value="weekly-date">Щотижня в цей день</option>
+            <option value="monthly-date">Щомісяця в це число</option>
+            <option value="monthly-last-day">Щомісяця в останній день</option>
+            <option value="yearly-date">Щороку в цю дату</option>
+          </select>
+        </div>
+        <p class="voice-status" id="voiceStatus" role="status" aria-live="polite"></p>
+        <button class="modal-submit-button" id="submitTaskButton" type="button">Додати задачу</button>
+      </section>
+    </div>
+
+    <nav class="bottom-tabs" aria-label="Головна навігація">
+      <button class="tab-button active" id="tasksTab" type="button" aria-controls="tasksPanel" aria-selected="true">
+        <span class="tab-icon" aria-hidden="true">✓</span>
+        <span>Задачі</span>
+      </button>
+    </nav>
+
+    <script src="app.js?v=10" defer></script>
+  </body>
+</html>
