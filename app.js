@@ -72,6 +72,11 @@ const pomodoroState = {
   remaining: POMODORO_WORK_SECONDS,
   running: false,
   intervalId: null,
+  // Wall-clock timestamp the current segment ends at. Used to recompute
+  // "remaining" from real elapsed time on every tick (not just on reload),
+  // so a backgrounded/throttled tab doesn't make the countdown freeze or
+  // drift — see pomodoroTick().
+  endAt: null,
 };
 
 function formatPomodoroTime(totalSeconds) {
@@ -106,20 +111,44 @@ function playPomodoroChime() {
 }
 
 function pomodoroTick() {
-  pomodoroState.remaining -= 1;
+  // Recompute from the wall-clock end time rather than doing "remaining -= 1"
+  // on every fire. A plain decrement assumes the interval always fires once
+  // per real second, which browsers do NOT guarantee for a background/hidden
+  // tab (Chrome/Firefox throttle timers there, and mobile browsers can pause
+  // them almost entirely). Deriving remaining from Date.now() means the
+  // countdown always reflects real elapsed time, even if ticks were skipped.
+  if (pomodoroState.endAt) {
+    pomodoroState.remaining = Math.round((pomodoroState.endAt - Date.now()) / 1000);
+  } else {
+    pomodoroState.remaining -= 1;
+  }
+
   if (pomodoroState.remaining <= 0) {
-    playPomodoroChime();
-    if (pomodoroState.mode === "work") {
-      // Work session finished — roll straight into the 15-minute break.
-      pomodoroState.mode = "break";
-      pomodoroState.remaining = POMODORO_BREAK_SECONDS;
-      showPomodoroBrowserNotification("break");
-    } else {
-      // Break finished — immediately begin the next work session.
-      pomodoroState.mode = "work";
-      pomodoroState.remaining = POMODORO_WORK_SECONDS;
-      showPomodoroBrowserNotification("work");
+    // A throttled tab may deliver this tick many real seconds after the
+    // segment actually ended (or several segments may have elapsed while
+    // the tab was hidden/asleep). Fast-forward through them so the chime
+    // and mode land on the correct segment instead of just the next one.
+    let overshoot = -pomodoroState.remaining;
+    let chimed = false;
+    while (pomodoroState.remaining <= 0) {
+      if (!chimed) {
+        playPomodoroChime();
+        chimed = true;
+      }
+      if (pomodoroState.mode === "work") {
+        // Work session finished — roll straight into the 15-minute break.
+        pomodoroState.mode = "break";
+        pomodoroState.remaining = POMODORO_BREAK_SECONDS - overshoot;
+        showPomodoroBrowserNotification("break");
+      } else {
+        // Break finished — immediately begin the next work session.
+        pomodoroState.mode = "work";
+        pomodoroState.remaining = POMODORO_WORK_SECONDS - overshoot;
+        showPomodoroBrowserNotification("work");
+      }
+      overshoot = pomodoroState.remaining <= 0 ? -pomodoroState.remaining : 0;
     }
+    pomodoroState.endAt = Date.now() + pomodoroState.remaining * 1000;
   }
   renderPomodoro();
   savePomodoroState();
@@ -134,6 +163,7 @@ function startPomodoro() {
     && Notification.permission === "default";
   const permissionRequest = requestReminderNotificationPermission();
   pomodoroState.running = true;
+  pomodoroState.endAt = Date.now() + pomodoroState.remaining * 1000;
   pomodoroState.intervalId = window.setInterval(pomodoroTick, 1000);
   if (needsNotificationPermission) {
     permissionRequest?.then(() => showPomodoroBrowserNotification(pomodoroState.mode));
@@ -146,6 +176,7 @@ function startPomodoro() {
 
 function stopPomodoro() {
   pomodoroState.running = false;
+  pomodoroState.endAt = null;
   if (pomodoroState.intervalId) window.clearInterval(pomodoroState.intervalId);
   pomodoroState.intervalId = null;
   renderPomodoro();
@@ -159,6 +190,16 @@ function resetPomodoro() {
   renderPomodoro();
   savePomodoroState();
 }
+
+// When the tab goes from hidden back to visible, resync immediately from
+// wall-clock time instead of waiting for the next (possibly throttled)
+// interval tick. This is what makes the timer feel "unstuck" the instant
+// you switch back, rather than a beat or two later.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && pomodoroState.running && pomodoroState.endAt) {
+    pomodoroTick();
+  }
+});
 
 // --- Persisting the Pomodoro timer across page reloads --------------------
 // We never trust the ticking "remaining" value across a reload (the JS
@@ -200,16 +241,19 @@ function loadPomodoroState() {
       // Still mid-segment — resume the countdown from real elapsed time
       // instead of restarting it from the full duration.
       pomodoroState.remaining = remainingNow;
+      pomodoroState.endAt = saved.endAt;
       pomodoroState.running = true;
       pomodoroState.intervalId = window.setInterval(pomodoroTick, 1000);
     } else {
       // The segment finished while the page was closed/reloaded — land on
       // "time's up" for it rather than silently resetting to a full timer.
       pomodoroState.remaining = 0;
+      pomodoroState.endAt = null;
       pomodoroState.running = false;
     }
   } else {
     pomodoroState.remaining = Number.isFinite(saved.remaining) ? saved.remaining : POMODORO_WORK_SECONDS;
+    pomodoroState.endAt = null;
     pomodoroState.running = false;
   }
 }
@@ -229,7 +273,6 @@ const els = {
   newReminderHour: document.querySelector("#newReminderHour"),
   newReminderMinute: document.querySelector("#newReminderMinute"),
   taskRepeat: document.querySelector("#taskRepeat"),
-  newTaskPriority: document.querySelector("#newTaskPriority"),
   taskModal: document.querySelector("#taskModal"),
   taskList: document.querySelector("#taskList"),
   taskSearch: document.querySelector("#taskSearch"),
@@ -243,6 +286,7 @@ const els = {
   pomodoroStartButton: document.querySelector("#pomodoroStartButton"),
   pomodoroStopButton: document.querySelector("#pomodoroStopButton"),
   pomodoroResetButton: document.querySelector("#pomodoroResetButton"),
+  notifPermissionButton: document.querySelector("#notifPermissionButton"),
   appShell: document.querySelector(".app-shell"),
   tasksPanel: document.querySelector("#tasksPanel"),
   tasksTab: document.querySelector("#tasksTab"),
@@ -1106,12 +1150,46 @@ function requestReminderNotificationPermission() {
     // Browsers increasingly refuse to show the permission prompt at all
     // when it isn't triggered by a direct user click (it just silently
     // stays "default" forever) — this automatic attempt on login covers
-    // browsers that still allow it. If it's silently ignored, reminders
-    // will still fire in-app (sound), just without a system notification.
-    return Notification.requestPermission().catch(() => {});
+    // browsers that still allow it, and updateNotifPermissionButton()
+    // below shows a real "Увімкнути сповіщення" button as a fallback for
+    // the ones that don't, so task-time notifications aren't silently lost.
+    return Notification.requestPermission().finally(updateNotifPermissionButton).catch(() => {});
   }
+  updateNotifPermissionButton();
   return Promise.resolve();
 }
+
+// Reflects (and lets the user fix) the actual browser notification
+// permission — a task reminder can only ever show a system notification if
+// this is "granted". If the permission was never actually granted (e.g. the
+// automatic prompt above got silently ignored by the browser, or the user
+// dismissed it once), reminders will fire internally but no notification
+// will ever appear, which is exactly the "missing notification" symptom.
+function updateNotifPermissionButton() {
+  const button = els.notifPermissionButton;
+  if (!button) return;
+  if (window.AndroidNotifications || !("Notification" in window)) {
+    button.hidden = true;
+    return;
+  }
+  button.hidden = false;
+  const permission = Notification.permission;
+  if (permission === "granted") {
+    button.textContent = "🔔 Сповіщення увімкнено";
+    button.disabled = true;
+  } else if (permission === "denied") {
+    button.textContent = "🔕 Сповіщення заблоковано — дозвольте в налаштуваннях сайту в браузері";
+    button.disabled = true;
+  } else {
+    button.textContent = "🔔 Увімкнути сповіщення";
+    button.disabled = false;
+  }
+}
+
+els.notifPermissionButton?.addEventListener("click", () => {
+  if (!("Notification" in window)) return;
+  Notification.requestPermission().finally(updateNotifPermissionButton).catch(() => {});
+});
 
 function highlightReminderTaskInView(taskId) {
   const item = els.taskList?.querySelector(`.task-item[data-task-id="${CSS.escape(String(taskId))}"]`)
@@ -1123,6 +1201,7 @@ function highlightReminderTaskInView(taskId) {
 }
 
 function showReminderBrowserNotification(task) {
+  showVoiceToast(`🔔 Нагадування: ${task.title}`, "notification");
   if (window.AndroidNotifications || !("Notification" in window) || Notification.permission !== "granted") return;
   try {
     const notification = new Notification("Нагадування", {
@@ -1142,6 +1221,10 @@ function showReminderBrowserNotification(task) {
 
 function showPomodoroBrowserNotification(mode) {
   const isBreak = mode === "break";
+  showVoiceToast(
+    isBreak ? "🍅 Помодоро: перерва розпочалася — 15 хвилин." : "🍅 Помодоро: робочий цикл розпочато — 45 хвилин.",
+    "notification",
+  );
   if (window.AndroidNotifications || !("Notification" in window) || Notification.permission !== "granted") return;
   try {
     const notification = new Notification("Помодоро", {
@@ -1251,7 +1334,6 @@ async function addTask() {
     return;
   }
   if (priorityParsed.priority) task.priority = priorityParsed.priority;
-  else if (els.newTaskPriority && hasPriority(els.newTaskPriority.value)) task.priority = els.newTaskPriority.value;
   task.reminderAt = parsedTitle.reminderAt || (els.newReminderEnabled.checked ? getNewReminderValue() : null);
   task.recurrence = task.reminderAt && els.taskRepeat.value !== "none"
     ? expandRecurrence(els.taskRepeat.value, new Date(task.reminderAt)) : null;
@@ -1262,7 +1344,6 @@ async function addTask() {
   els.newReminderEnabled.checked = false;
   updateNewReminderVisibility();
   els.taskRepeat.value = "none";
-  if (els.newTaskPriority) els.newTaskPriority.value = "";
   closeTaskModal();
   render();
   await saveState();
@@ -1440,13 +1521,6 @@ function openTaskTitleEditor(task) {
 }
 
 function openTaskModal() {
-  if (els.newTaskPriority && !els.newTaskPriority.dataset.populated) {
-    els.newTaskPriority.append(
-      ...Object.entries(PRIORITIES).map(([priority, details]) => new Option(details.label, priority)),
-    );
-    els.newTaskPriority.dataset.populated = "true";
-  }
-  if (els.newTaskPriority) els.newTaskPriority.value = "";
   els.taskModal.hidden = false;
   window.requestAnimationFrame(() => {
     els.taskModal.classList.add("open");
@@ -2066,8 +2140,7 @@ function makeTaskItem(task, mode) {
   const isOverdue = Boolean(task.reminderAt) && !task.done && !completedToday && !notReadyYet
     && mode !== "trash" && mode !== "archive"
     && new Date(task.reminderAt).getTime() < Date.now();
-  const isBugTask = /баг/i.test(task.title);
-  item.className = `task-item${task.done ? " done" : ""}${isOverdue ? " overdue" : ""}${isBugTask ? " task-item-bug" : ""}`;
+  item.className = `task-item${task.done ? " done" : ""}${isOverdue ? " overdue" : ""}`;
 
   const checkButton = document.createElement("button");
   checkButton.className = `check-button${completedToday ? " completed-today" : ""}${notReadyYet ? " not-ready-yet" : ""}`;
@@ -2717,6 +2790,7 @@ els.pomodoroStopButton?.addEventListener("click", stopPomodoro);
 els.pomodoroResetButton?.addEventListener("click", resetPomodoro);
 loadPomodoroState();
 renderPomodoro();
+updateNotifPermissionButton();
 
 els.logoutButton?.addEventListener("click", async () => {
   if (!supabaseClient) return;
@@ -2734,9 +2808,9 @@ function applyThemeToggleLabel() {
   if (!els.themeToggleButton) return;
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
   const icon = els.themeToggleButton.querySelector(".theme-link-icon");
+  const label = els.themeToggleButton.querySelector(".theme-link-label");
   if (icon) icon.textContent = isDark ? "☼" : "☾";
-  els.themeToggleButton.setAttribute("aria-label", isDark ? "Світла тема" : "Темна тема");
-  els.themeToggleButton.title = isDark ? "Світла тема" : "Темна тема";
+  if (label) label.textContent = isDark ? "Світла тема" : "Темна тема";
 }
 
 function setTheme(theme) {
