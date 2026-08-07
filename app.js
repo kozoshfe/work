@@ -242,7 +242,6 @@ const els = {
   pomodoroStartButton: document.querySelector("#pomodoroStartButton"),
   pomodoroStopButton: document.querySelector("#pomodoroStopButton"),
   pomodoroResetButton: document.querySelector("#pomodoroResetButton"),
-  notifPermissionButton: document.querySelector("#notifPermissionButton"),
   appShell: document.querySelector(".app-shell"),
   tasksPanel: document.querySelector("#tasksPanel"),
   tasksTab: document.querySelector("#tasksTab"),
@@ -1106,46 +1105,12 @@ function requestReminderNotificationPermission() {
     // Browsers increasingly refuse to show the permission prompt at all
     // when it isn't triggered by a direct user click (it just silently
     // stays "default" forever) — this automatic attempt on login covers
-    // browsers that still allow it, and updateNotifPermissionButton()
-    // below shows a real "Увімкнути сповіщення" button as a fallback for
-    // the ones that don't, so task-time notifications aren't silently lost.
-    return Notification.requestPermission().finally(updateNotifPermissionButton).catch(() => {});
+    // browsers that still allow it. If it's silently ignored, reminders
+    // will still fire in-app (sound), just without a system notification.
+    return Notification.requestPermission().catch(() => {});
   }
-  updateNotifPermissionButton();
   return Promise.resolve();
 }
-
-// Reflects (and lets the user fix) the actual browser notification
-// permission — a task reminder can only ever show a system notification if
-// this is "granted". If the permission was never actually granted (e.g. the
-// automatic prompt above got silently ignored by the browser, or the user
-// dismissed it once), reminders will fire internally but no notification
-// will ever appear, which is exactly the "missing notification" symptom.
-function updateNotifPermissionButton() {
-  const button = els.notifPermissionButton;
-  if (!button) return;
-  if (window.AndroidNotifications || !("Notification" in window)) {
-    button.hidden = true;
-    return;
-  }
-  button.hidden = false;
-  const permission = Notification.permission;
-  if (permission === "granted") {
-    button.textContent = "🔔 Сповіщення увімкнено";
-    button.disabled = true;
-  } else if (permission === "denied") {
-    button.textContent = "🔕 Сповіщення заблоковано — дозвольте в налаштуваннях сайту в браузері";
-    button.disabled = true;
-  } else {
-    button.textContent = "🔔 Увімкнути сповіщення";
-    button.disabled = false;
-  }
-}
-
-els.notifPermissionButton?.addEventListener("click", () => {
-  if (!("Notification" in window)) return;
-  Notification.requestPermission().finally(updateNotifPermissionButton).catch(() => {});
-});
 
 function highlightReminderTaskInView(taskId) {
   const item = els.taskList?.querySelector(`.task-item[data-task-id="${CSS.escape(String(taskId))}"]`)
@@ -1157,7 +1122,6 @@ function highlightReminderTaskInView(taskId) {
 }
 
 function showReminderBrowserNotification(task) {
-  showVoiceToast(`🔔 Нагадування: ${task.title}`, "notification");
   if (window.AndroidNotifications || !("Notification" in window) || Notification.permission !== "granted") return;
   try {
     const notification = new Notification("Нагадування", {
@@ -1177,10 +1141,6 @@ function showReminderBrowserNotification(task) {
 
 function showPomodoroBrowserNotification(mode) {
   const isBreak = mode === "break";
-  showVoiceToast(
-    isBreak ? "🍅 Помодоро: перерва розпочалася — 15 хвилин." : "🍅 Помодоро: робочий цикл розпочато — 45 хвилин.",
-    "notification",
-  );
   if (window.AndroidNotifications || !("Notification" in window) || Notification.permission !== "granted") return;
   try {
     const notification = new Notification("Помодоро", {
@@ -2746,7 +2706,6 @@ els.pomodoroStopButton?.addEventListener("click", stopPomodoro);
 els.pomodoroResetButton?.addEventListener("click", resetPomodoro);
 loadPomodoroState();
 renderPomodoro();
-updateNotifPermissionButton();
 
 els.logoutButton?.addEventListener("click", async () => {
   if (!supabaseClient) return;
@@ -2764,9 +2723,9 @@ function applyThemeToggleLabel() {
   if (!els.themeToggleButton) return;
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
   const icon = els.themeToggleButton.querySelector(".theme-link-icon");
-  const label = els.themeToggleButton.querySelector(".theme-link-label");
   if (icon) icon.textContent = isDark ? "☼" : "☾";
-  if (label) label.textContent = isDark ? "Світла тема" : "Темна тема";
+  els.themeToggleButton.setAttribute("aria-label", isDark ? "Світла тема" : "Темна тема");
+  els.themeToggleButton.title = isDark ? "Світла тема" : "Темна тема";
 }
 
 function setTheme(theme) {
