@@ -1177,14 +1177,14 @@ function updateNotifPermissionButton() {
   const permission = Notification.permission;
   if (permission === "granted") {
     button.textContent = "🔔";
-    button.setAttribute("aria-label", "Сповіщення увімкнено");
-    button.title = "Сповіщення увімкнено";
-    button.disabled = true;
+    button.setAttribute("aria-label", "Надіслати тестове сповіщення");
+    button.title = "Надіслати тестове сповіщення";
+    button.disabled = false;
   } else if (permission === "denied") {
     button.textContent = "🔕";
     button.setAttribute("aria-label", "Сповіщення заблоковано");
-    button.title = "Сповіщення заблоковано";
-    button.disabled = true;
+    button.title = "Сповіщення заблоковано в браузері або macOS";
+    button.disabled = false;
   } else {
     button.textContent = "🔔";
     button.setAttribute("aria-label", "Увімкнути сповіщення");
@@ -1195,7 +1195,29 @@ function updateNotifPermissionButton() {
 
 els.notifPermissionButton?.addEventListener("click", () => {
   if (!("Notification" in window)) return;
-  Notification.requestPermission().finally(updateNotifPermissionButton).catch(() => {});
+  if (Notification.permission === "granted") {
+    void showSystemNotification("Перевірка сповіщень", {
+      body: "Сповіщення macOS працюють.",
+      icon: "icons/icon-192.png",
+      tag: "notification-test",
+    });
+    showVoiceToast("Тестове сповіщення надіслано.", "notification");
+    return;
+  }
+  if (Notification.permission === "denied") {
+    showVoiceToast("Дозвольте сповіщення для цього сайту в налаштуваннях браузера та macOS.", "error");
+    return;
+  }
+  Notification.requestPermission().then((permission) => {
+    updateNotifPermissionButton();
+    if (permission === "granted") {
+      void showSystemNotification("Перевірка сповіщень", {
+        body: "Сповіщення macOS увімкнено.",
+        icon: "icons/icon-192.png",
+        tag: "notification-test",
+      });
+    }
+  }).catch(() => {});
 });
 
 function highlightReminderTaskInView(taskId) {
@@ -1207,23 +1229,42 @@ function highlightReminderTaskInView(taskId) {
   window.setTimeout(() => item.classList.remove("notification-target"), 3000);
 }
 
-function showReminderBrowserNotification(task) {
-  showVoiceToast(`🔔 Нагадування: ${task.title}`, "notification");
-  if (window.AndroidNotifications || !("Notification" in window) || Notification.permission !== "granted") return;
+// Use the service worker when it is available: its notifications are handled
+// by macOS as system notifications and keep working while the app is in a
+// background tab. The regular Notification API remains as a fallback.
+async function showSystemNotification(title, options) {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
   try {
-    const notification = new Notification("Нагадування", {
-      body: task.title,
-      tag: `reminder-${task.id}`,
-      icon: "icon-192.png",
-    });
+    const registration = "serviceWorker" in navigator ? await navigator.serviceWorker.ready : null;
+    if (registration) {
+      await registration.showNotification(title, options);
+      return;
+    }
+  } catch (error) {
+    console.warn("Не вдалося показати сповіщення через service worker:", error);
+  }
+
+  try {
+    const notification = new Notification(title, options);
     notification.onclick = () => {
       window.focus();
-      highlightReminderTaskInView(task.id);
+      if (options.data?.taskId) highlightReminderTaskInView(options.data.taskId);
       notification.close();
     };
   } catch (error) {
-    console.warn("Не вдалося показати сповіщення нагадування:", error);
+    console.warn("Не вдалося показати системне сповіщення:", error);
   }
+}
+
+function showReminderBrowserNotification(task) {
+  showVoiceToast(`🔔 Нагадування: ${task.title}`, "notification");
+  if (window.AndroidNotifications || !("Notification" in window) || Notification.permission !== "granted") return;
+  void showSystemNotification("Нагадування", {
+    body: task.title,
+    tag: `reminder-${task.id}`,
+    icon: "icons/icon-192.png",
+    data: { taskId: task.id },
+  });
 }
 
 function showPomodoroBrowserNotification(mode) {
@@ -1233,19 +1274,11 @@ function showPomodoroBrowserNotification(mode) {
     "notification",
   );
   if (window.AndroidNotifications || !("Notification" in window) || Notification.permission !== "granted") return;
-  try {
-    const notification = new Notification("Помодоро", {
-      body: isBreak ? "Перерва розпочалася — 15 хвилин." : "Робочий цикл розпочато — 45 хвилин.",
-      tag: "pomodoro-timer",
-      icon: "icon-192.png",
-    });
-    notification.onclick = () => {
-      window.focus();
-      notification.close();
-    };
-  } catch (error) {
-    console.warn("Не вдалося показати сповіщення Помодоро:", error);
-  }
+  void showSystemNotification("Помодоро", {
+    body: isBreak ? "Перерва розпочалася — 15 хвилин." : "Робочий цикл розпочато — 45 хвилин.",
+    tag: "pomodoro-timer",
+    icon: "icons/icon-192.png",
+  });
 }
 
 function fireReminderAlert(task) {
@@ -2843,6 +2876,12 @@ els.themeToggleButton?.addEventListener("click", () => {
 applyThemeToggleLabel();
 
 if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.type === "open-reminder-task" && event.data.taskId) {
+      highlightReminderTaskInView(event.data.taskId);
+    }
+  });
+
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./service-worker.js").catch((error) => {
       console.warn("Service worker registration failed", error);
