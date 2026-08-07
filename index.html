@@ -46,10 +46,6 @@
     </section>
     <main class="app-shell">
       <aside class="sidebar" aria-label="Основна навігація">
-        <a class="brand" href="#tasksPanel" aria-label="Мій трекер, мої задачі">
-          <span class="brand-mark" aria-hidden="true">✓</span>
-          <span>Мій трекер</span>
-        </a>
         <nav class="sidebar-nav">
           <button class="sidebar-link active" id="tasksNav" type="button" aria-current="page"><span aria-hidden="true">◉</span>Мої задачі</button>
           <button class="sidebar-link" id="calendarNav" type="button" aria-controls="calendarPanel"><span aria-hidden="true">□</span>Календар</button>
@@ -77,6 +73,10 @@
             <button class="daily-log-button daily-log-add" id="dailyLogAddButton" type="button">
               <span aria-hidden="true">＋</span>Додати вручну
             </button>
+            <button class="daily-log-button daily-log-clear" id="dailyLogClearButton" type="button">Очистити все</button>
+            <button class="daily-log-button daily-log-copy" id="dailyLogCopyButton" type="button" aria-label="Копіювати список" title="Копіювати список">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
+            </button>
             <button class="daily-log-button daily-log-mic" id="dailyLogMicButton" type="button" aria-label="Диктувати" title="Диктувати">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" /><path d="M19 11a7 7 0 0 1-14 0" /><path d="M12 18v3" /><path d="M8 21h8" /></svg>
             </button>
@@ -84,27 +84,20 @@
           <p class="daily-log-status" id="dailyLogStatus" role="status" aria-live="polite"></p>
         </div>
 
-        <button class="notif-permission-button" id="notifPermissionButton" type="button" hidden></button>
-
-        <button class="theme-link" id="themeToggleButton" type="button"><span class="theme-link-icon" aria-hidden="true">☾</span><span class="theme-link-label">Темна тема</span> <span aria-hidden="true">›</span></button>
       </aside>
 
       <section class="workspace">
         <header class="app-header">
-          <h1>Мої задачі</h1>
           <div class="header-actions">
-            <button class="header-logout-button" id="logoutButton" type="button">Вийти</button>
-          </div>
-        </header>
-        <div class="toolbar">
-          <label class="task-search" for="taskSearch"><span aria-hidden="true">⌕</span><input id="taskSearch" type="search" placeholder="Пошук задач..." autocomplete="off" /></label>
-          <div class="toolbar-actions">
+            <button class="notif-permission-button" id="notifPermissionButton" type="button" hidden></button>
+            <button class="theme-link" id="themeToggleButton" type="button"><span class="theme-link-icon" aria-hidden="true">☾</span><span class="theme-link-label">Темна тема</span> <span aria-hidden="true">›</span></button>
             <button class="new-task-button" id="addButton" type="button"><span aria-hidden="true">＋</span>Нова задача</button>
             <button class="toolbar-mic-button" id="navMicButton" type="button" aria-label="Додати голосом" title="Додати голосом">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" /><path d="M19 11a7 7 0 0 1-14 0" /><path d="M12 18v3" /><path d="M8 21h8" /></svg>
             </button>
+            <button class="header-logout-button" id="logoutButton" type="button">Вийти</button>
           </div>
-        </div>
+        </header>
       <section class="content" id="tasksPanel" aria-labelledby="tasksTab">
         <div class="section-heading">
           <div class="task-filter-tabs" role="tablist" aria-label="Фільтр задач">

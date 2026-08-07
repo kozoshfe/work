@@ -31,7 +31,6 @@ const PRIORITY_GROUPS = [
     key: "high",
     label: "Високий пріоритет",
     dotClass: "priority-high",
-    description: "Найважливіші задачі, які потребують негайної уваги",
     badge: "Терміново",
     icon: "up",
   },
@@ -39,7 +38,6 @@ const PRIORITY_GROUPS = [
     key: "medium",
     label: "Середній пріоритет",
     dotClass: "priority-medium",
-    description: "Важливі задачі, які варто виконати найближчим часом",
     badge: "Важливо",
     icon: "minus",
   },
@@ -47,7 +45,6 @@ const PRIORITY_GROUPS = [
     key: "low",
     label: "Низький пріоритет",
     dotClass: "priority-low",
-    description: "Задачі без терміновості, які можна виконати пізніше",
     badge: "Можна зачекати",
     icon: "down",
   },
@@ -55,7 +52,6 @@ const PRIORITY_GROUPS = [
     key: "none",
     label: "Без пріоритету",
     dotClass: "priority-none",
-    description: "Задачі без встановленого пріоритету",
     badge: "Без пріоритету",
     icon: "equals",
   },
@@ -117,11 +113,12 @@ function pomodoroTick() {
       // Work session finished — roll straight into the 15-minute break.
       pomodoroState.mode = "break";
       pomodoroState.remaining = POMODORO_BREAK_SECONDS;
+      showPomodoroBrowserNotification("break");
     } else {
-      // Break finished — stop and reset back to a fresh work session.
+      // Break finished — immediately begin the next work session.
       pomodoroState.mode = "work";
       pomodoroState.remaining = POMODORO_WORK_SECONDS;
-      stopPomodoro();
+      showPomodoroBrowserNotification("work");
     }
   }
   renderPomodoro();
@@ -130,8 +127,19 @@ function pomodoroTick() {
 
 function startPomodoro() {
   if (pomodoroState.running) return;
+  // This runs from a real button click, so browsers are allowed to show the
+  // notification-permission prompt if it has not been granted yet.
+  const needsNotificationPermission = !window.AndroidNotifications
+    && "Notification" in window
+    && Notification.permission === "default";
+  const permissionRequest = requestReminderNotificationPermission();
   pomodoroState.running = true;
   pomodoroState.intervalId = window.setInterval(pomodoroTick, 1000);
+  if (needsNotificationPermission) {
+    permissionRequest?.then(() => showPomodoroBrowserNotification(pomodoroState.mode));
+  } else {
+    showPomodoroBrowserNotification(pomodoroState.mode);
+  }
   renderPomodoro();
   savePomodoroState();
 }
@@ -265,6 +273,8 @@ const els = {
   dailyLogInputRow: document.querySelector("#dailyLogInputRow"),
   dailyLogInput: document.querySelector("#dailyLogInput"),
   dailyLogAddButton: document.querySelector("#dailyLogAddButton"),
+  dailyLogClearButton: document.querySelector("#dailyLogClearButton"),
+  dailyLogCopyButton: document.querySelector("#dailyLogCopyButton"),
   dailyLogMicButton: document.querySelector("#dailyLogMicButton"),
   dailyLogStatus: document.querySelector("#dailyLogStatus"),
 };
@@ -312,53 +322,6 @@ function loadDailyLog() {
   } catch (error) {
     dailyLogEntries = [];
   }
-}
-
-// --- Auto-clear "Що робив сьогодні?" at 22:00 every day --------------------
-// The list already stops showing yesterday's entries once the date rolls
-// over at midnight (see renderDailyLog's date filter), but the user wants
-// the log wiped earlier, at 22:00 local time, not at midnight. We track the
-// date of the last auto-clear so it only fires once per day, run it once on
-// load (covers the app being opened after 22:00), and schedule it to fire
-// automatically for as long as the app stays open.
-const DAILY_LOG_AUTO_CLEAR_HOUR = 22; // 22:00 local time
-const DAILY_LOG_LAST_AUTO_CLEAR_KEY = "dailyLogLastAutoClear:v1";
-
-function autoClearDailyLogIfDue() {
-  const now = new Date();
-  if (now.getHours() < DAILY_LOG_AUTO_CLEAR_HOUR) return;
-
-  const todayKey = todayDateKey();
-  let lastAutoClear = null;
-  try {
-    lastAutoClear = localStorage.getItem(DAILY_LOG_LAST_AUTO_CLEAR_KEY);
-  } catch (error) {
-    // Storage unavailable — fall through and clear anyway for this session.
-  }
-  if (lastAutoClear === todayKey) return; // already cleared today
-
-  dailyLogEntries = [];
-  saveDailyLog();
-  renderDailyLog();
-  try {
-    localStorage.setItem(DAILY_LOG_LAST_AUTO_CLEAR_KEY, todayKey);
-  } catch (error) {
-    // Ignore — worst case it clears again next time the app loads today.
-  }
-}
-
-function msUntilNextDailyLogAutoClear() {
-  const now = new Date();
-  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), DAILY_LOG_AUTO_CLEAR_HOUR, 0, 0, 0);
-  if (next <= now) next.setDate(next.getDate() + 1);
-  return next.getTime() - now.getTime();
-}
-
-function scheduleDailyLogAutoClear() {
-  window.setTimeout(() => {
-    autoClearDailyLogIfDue();
-    scheduleDailyLogAutoClear();
-  }, msUntilNextDailyLogAutoClear());
 }
 
 function saveDailyLog() {
@@ -415,6 +378,35 @@ function removeDailyLogEntry(id) {
   dailyLogEntries = dailyLogEntries.filter((entry) => entry.id !== id);
   saveDailyLog();
   renderDailyLog();
+}
+
+function clearDailyLog() {
+  const today = todayDateKey();
+  dailyLogEntries = dailyLogEntries.filter((entry) => entry.date !== today);
+  closeDailyLogInput();
+  saveDailyLog();
+  renderDailyLog();
+}
+
+async function copyDailyLog() {
+  const today = todayDateKey();
+  const todaysEntries = dailyLogEntries.filter((entry) => entry.date === today);
+  if (!todaysEntries.length) {
+    if (els.dailyLogStatus) els.dailyLogStatus.textContent = "Список порожній — нічого копіювати.";
+    return;
+  }
+  const text = todaysEntries.map((entry, index) => `${index + 1}. ${entry.text}`).join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    if (els.dailyLogStatus) els.dailyLogStatus.textContent = "Скопійовано!";
+  } catch (error) {
+    if (els.dailyLogStatus) els.dailyLogStatus.textContent = "Не вдалося скопіювати.";
+  }
+  window.setTimeout(() => {
+    if (els.dailyLogStatus && els.dailyLogStatus.textContent !== "Слухаю... Кажіть по одній справі за раз.") {
+      els.dailyLogStatus.textContent = "";
+    }
+  }, 2200);
 }
 
 function openDailyLogInput() {
@@ -526,7 +518,7 @@ function setupNewReminderPicker() {
     const year = String(now.getFullYear() + i); return [year, year];
   }), String(now.getFullYear()));
   fillReminderSelect(els.newReminderHour, Array.from({ length: 24 }, (_, i) => { const v = String(i).padStart(2, "0"); return [v, v]; }), String(now.getHours()).padStart(2, "0"));
-  fillReminderSelect(els.newReminderMinute, Array.from({ length: 12 }, (_, i) => { const v = String(i * 5).padStart(2, "0"); return [v, v]; }), String(Math.round(now.getMinutes() / 5) * 5 % 60).padStart(2, "0"));
+  fillReminderSelect(els.newReminderMinute, Array.from({ length: 60 }, (_, i) => { const v = String(i).padStart(2, "0"); return [v, v]; }), String(now.getMinutes()).padStart(2, "0"));
 }
 
 function getNewReminderValue() {
@@ -1109,7 +1101,7 @@ function playReminderSound() {
 }
 
 function requestReminderNotificationPermission() {
-  if (window.AndroidNotifications || !("Notification" in window)) return;
+  if (window.AndroidNotifications || !("Notification" in window)) return Promise.resolve();
   if (Notification.permission === "default") {
     // Browsers increasingly refuse to show the permission prompt at all
     // when it isn't triggered by a direct user click (it just silently
@@ -1117,9 +1109,10 @@ function requestReminderNotificationPermission() {
     // browsers that still allow it, and updateNotifPermissionButton()
     // below shows a real "Увімкнути сповіщення" button as a fallback for
     // the ones that don't, so task-time notifications aren't silently lost.
-    Notification.requestPermission().finally(updateNotifPermissionButton).catch(() => {});
+    return Notification.requestPermission().finally(updateNotifPermissionButton).catch(() => {});
   }
   updateNotifPermissionButton();
+  return Promise.resolve();
 }
 
 // Reflects (and lets the user fix) the actual browser notification
@@ -1164,6 +1157,7 @@ function highlightReminderTaskInView(taskId) {
 }
 
 function showReminderBrowserNotification(task) {
+  showVoiceToast(`🔔 Нагадування: ${task.title}`, "notification");
   if (window.AndroidNotifications || !("Notification" in window) || Notification.permission !== "granted") return;
   try {
     const notification = new Notification("Нагадування", {
@@ -1178,6 +1172,28 @@ function showReminderBrowserNotification(task) {
     };
   } catch (error) {
     console.warn("Не вдалося показати сповіщення нагадування:", error);
+  }
+}
+
+function showPomodoroBrowserNotification(mode) {
+  const isBreak = mode === "break";
+  showVoiceToast(
+    isBreak ? "🍅 Помодоро: перерва розпочалася — 15 хвилин." : "🍅 Помодоро: робочий цикл розпочато — 45 хвилин.",
+    "notification",
+  );
+  if (window.AndroidNotifications || !("Notification" in window) || Notification.permission !== "granted") return;
+  try {
+    const notification = new Notification("Помодоро", {
+      body: isBreak ? "Перерва розпочалася — 15 хвилин." : "Робочий цикл розпочато — 45 хвилин.",
+      tag: "pomodoro-timer",
+      icon: "icon-192.png",
+    });
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+  } catch (error) {
+    console.warn("Не вдалося показати сповіщення Помодоро:", error);
   }
 }
 
@@ -1226,10 +1242,15 @@ function playMicStopSound() {
 function checkDueReminders() {
   if (!appDataReady || window.AndroidNotifications) return;
   const now = Date.now();
+  // Only alert right at the reminder's exact time (a short window around it,
+  // matching the check interval) — not for every task that's simply overdue,
+  // which previously made the purple toast pop up at random-feeling moments
+  // for old/stale reminders whenever the app happened to check or reload.
+  const windowMs = REMINDER_ALERT_INTERVAL_MS * 2;
   state.tasks.forEach((task) => {
     if (!task.reminderAt || task.done) return;
     const dueTime = new Date(task.reminderAt).getTime();
-    if (Number.isNaN(dueTime) || dueTime > now) return;
+    if (Number.isNaN(dueTime) || dueTime > now || now - dueTime > windowMs) return;
     const key = `${task.id}:${task.reminderAt}`;
     if (firedReminderKeys.has(key)) return;
     firedReminderKeys.add(key);
@@ -1272,6 +1293,7 @@ async function addTask() {
   task.reminderAt = parsedTitle.reminderAt || (els.newReminderEnabled.checked ? getNewReminderValue() : null);
   task.recurrence = task.reminderAt && els.taskRepeat.value !== "none"
     ? expandRecurrence(els.taskRepeat.value, new Date(task.reminderAt)) : null;
+  if (task.reminderAt) requestReminderNotificationPermission();
   state.tasks.push(task);
   scheduleNativeReminder(task);
   els.taskInput.value = "";
@@ -1743,12 +1765,12 @@ function openPriorityPicker(task, anchor, showReminder = false) {
     const year = String(new Date().getFullYear() - 1 + index); return [year, year];
   });
   const hours = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
-  const minutes = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, "0"));
+  const minutes = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, "0"));
   const daySelect = makeSelect("День", days, String(currentReminder.getDate()).padStart(2, "0"));
   const monthSelect = makeSelect("Місяць", months, String(currentReminder.getMonth()));
   const yearSelect = makeSelect("Рік", years, String(currentReminder.getFullYear()));
   const hourSelect = makeSelect("Година", hours.map((value) => [value, value]), String(currentReminder.getHours()).padStart(2, "0"));
-  const minuteSelect = makeSelect("Хвилини", minutes.map((value) => [value, value]), String(Math.round(currentReminder.getMinutes() / 5) * 5 % 60).padStart(2, "0"));
+  const minuteSelect = makeSelect("Хвилини", minutes.map((value) => [value, value]), String(currentReminder.getMinutes()).padStart(2, "0"));
   const recurrenceSelect = makeSelect(
     "Повторювати",
     getRecurrenceOptions(currentReminder),
@@ -1781,6 +1803,7 @@ function openPriorityPicker(task, anchor, showReminder = false) {
     const selectedDate = new Date(Number(yearSelect.value), Number(monthSelect.value), Number(daySelect.value), Number(hourSelect.value), Number(minuteSelect.value));
     task.reminderAt = selectedDate.toISOString();
     task.recurrence = recurrenceSelect.value === "none" ? null : recurrenceSelect.value;
+    requestReminderNotificationPermission();
     cancelNativeReminder(task.id);
     scheduleNativeReminder(task);
     closePriorityPicker();
@@ -2245,11 +2268,7 @@ function makePriorityGroupHeader(group, count, isCollapsed) {
 
   titleRow.append(label, countBadge);
 
-  const desc = document.createElement("span");
-  desc.className = "priority-group-desc";
-  desc.textContent = group.description || "";
-
-  textWrap.append(titleRow, desc);
+  textWrap.append(titleRow);
 
   const badge = document.createElement("span");
   badge.className = `priority-group-badge ${group.dotClass}`;
@@ -2659,10 +2678,37 @@ els.taskInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") addTask();
 });
 
-window.addEventListener("keydown", (event) => {
+function handleGlobalShortcut(event) {
+  const isF3 = event.key === "F3" || event.code === "F3" || event.keyCode === 114;
+  const isEditable = event.target instanceof HTMLElement
+    && (event.target.matches("input, textarea, select") || event.target.isContentEditable);
+  const hasModifier = event.ctrlKey || event.altKey || event.metaKey;
+  const isDailyLogHotkey = event.key === "1" && !isEditable && !hasModifier;
+  const isTaskHotkey = event.key === "2" && !isEditable && !hasModifier;
+
+  if ((isF3 || isTaskHotkey) && !event.repeat) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (navMicTapTimer) {
+      window.clearTimeout(navMicTapTimer);
+      navMicTapTimer = null;
+    }
+    addVoiceTask();
+    return;
+  }
+  if (isDailyLogHotkey && !event.repeat) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleDailyLogVoiceInput();
+    return;
+  }
   if (event.key === "Escape" && !els.taskModal.hidden) closeTaskModal();
   if (event.key === "Escape" && priorityPickerTaskId) closePriorityPicker();
-});
+}
+
+// Capture the key before a focused input, modal, or browser shortcut handler
+// gets a chance to consume it.
+window.addEventListener("keydown", handleGlobalShortcut, { capture: true });
 
 document.addEventListener("click", (event) => {
   if (!priorityPickerTaskId) return;
@@ -2754,6 +2800,8 @@ els.dailyLogAddButton?.addEventListener("click", () => {
     submitDailyLogInput();
   }
 });
+els.dailyLogClearButton?.addEventListener("click", clearDailyLog);
+els.dailyLogCopyButton?.addEventListener("click", copyDailyLog);
 els.dailyLogInput?.addEventListener("keydown", (event) => {
   if (event.key === "Enter") submitDailyLogInput();
   if (event.key === "Escape") closeDailyLogInput();
@@ -2766,10 +2814,8 @@ els.dailyLogInput?.addEventListener("blur", () => {
 els.dailyLogMicButton?.addEventListener("click", toggleDailyLogVoiceInput);
 
 loadDailyLog();
-autoClearDailyLogIfDue();
 renderDailyLog();
 setupDailyLogSpeechRecognition();
-scheduleDailyLogAutoClear();
 
 setupSpeechRecognition();
 setupNewReminderPicker();

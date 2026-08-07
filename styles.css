@@ -1290,20 +1290,20 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 .toolbar { flex-shrink: 0; }
 .app-header { display: flex; align-items: center; justify-content: space-between; min-height: 96px; padding: 0 40px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.7); }
 .app-header h1 { margin: 0; font-size: clamp(1.65rem, 2.3vw, 2.05rem); letter-spacing: -.045em; }
-.header-actions { display: flex; align-items: center; gap: 18px; }.notification-button { position: relative; width: 38px; height: 38px; color: #202439; background: transparent; font-size: 1.55rem; line-height: 1; }.notification-button span { position: absolute; top: 7px; right: 5px; width: 9px; height: 9px; background: #7651e8; border: 2px solid #fff; border-radius: 50%; }.header-logout-button { display: grid; place-items: center; min-height: 40px; padding: 0 18px; color: #6d43e8; background: #f3edff; border: 1px solid #e2d5ff; border-radius: 999px; font-size: .84rem; font-weight: 750; }.header-logout-button:hover { background: #ebe0ff; }
+.header-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }.header-actions .notif-permission-button, .header-actions .theme-link, .header-actions .header-logout-button, .header-actions .toolbar-mic-button, .header-actions .new-task-button { min-height: 54px; border-radius: 12px; }.header-actions .notif-permission-button, .header-actions .theme-link, .header-actions .header-logout-button { font-size: .86rem; font-weight: 700; }.header-actions .notif-permission-button { width: auto; margin: 0; padding: 0 18px; white-space: nowrap; }.header-actions .theme-link { width: auto; margin: 0; padding: 0 18px; color: #555b6b; background: #fff; border: 1px solid #e5e5ec; box-shadow: 0 3px 8px rgba(31, 26, 66, .05); white-space: nowrap; }.header-actions .theme-link:hover { background: #faf8ff; }.header-actions .theme-link span:last-child { margin-left: 2px; }.header-actions .header-logout-button { padding: 0 18px; border-radius: 12px; }.notification-button { position: relative; width: 38px; height: 38px; color: #202439; background: transparent; font-size: 1.55rem; line-height: 1; }.notification-button span { position: absolute; top: 7px; right: 5px; width: 9px; height: 9px; background: #7651e8; border: 2px solid #fff; border-radius: 50%; }.header-logout-button { display: grid; place-items: center; min-height: 40px; padding: 0 18px; color: #6d43e8; background: #f3edff; border: 1px solid #e2d5ff; border-radius: 999px; font-size: .84rem; font-weight: 750; }.header-logout-button:hover { background: #ebe0ff; }
 
-.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 36px 40px 38px; }.task-search { display: flex; align-items: center; width: min(330px, 42vw); min-height: 54px; padding: 0 15px; color: #62687a; background: #fff; border: 1px solid #e3e3eb; border-radius: 12px; box-shadow: 0 3px 7px rgba(31, 26, 66, .025); }.task-search span { font-family: Georgia, serif; font-size: 1.7rem; line-height: 1; transform: rotate(-20deg); }.task-search input { min-height: 44px; padding: 0 10px; background: transparent; border: 0; box-shadow: none; font-size: .88rem; }.task-search input:focus { box-shadow: none; }.toolbar-actions { display: flex; gap: 14px; }.new-task-button { display: flex; align-items: center; gap: 9px; min-height: 54px; padding: 0 20px; color: #fff; background: linear-gradient(135deg, #7048e7, #5627cd); border-radius: 12px; box-shadow: 0 8px 16px rgba(94, 47, 210, .18); font-size: .86rem; font-weight: 700; }.new-task-button span { font-size: 1.55rem; font-weight: 300; }.toolbar-mic-button { display: grid; place-items: center; width: 56px; min-height: 54px; color: #3e4355; background: #fff; border: 1px solid #e5e5ec; border-radius: 12px; box-shadow: 0 3px 8px rgba(31, 26, 66, .05); }.toolbar-mic-button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }.toolbar-mic-button.listening { color: #fff; background: var(--brand); }
+.toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 18px; padding: 36px 40px 38px; }.task-search { display: flex; align-items: center; width: min(330px, 42vw); min-height: 54px; padding: 0 15px; color: #62687a; background: #fff; border: 1px solid #e3e3eb; border-radius: 12px; box-shadow: 0 3px 7px rgba(31, 26, 66, .025); }.task-search span { font-family: Georgia, serif; font-size: 1.7rem; line-height: 1; transform: rotate(-20deg); }.task-search input { min-height: 44px; padding: 0 10px; background: transparent; border: 0; box-shadow: none; font-size: .88rem; }.task-search input:focus { box-shadow: none; }.toolbar-actions { display: flex; gap: 14px; }.new-task-button { display: flex; align-items: center; gap: 9px; min-height: 54px; padding: 0 20px; color: #fff; background: linear-gradient(135deg, #7048e7, #5627cd); border-radius: 12px; box-shadow: 0 8px 16px rgba(94, 47, 210, .18); font-size: .86rem; font-weight: 700; }.new-task-button span { font-size: 1.55rem; font-weight: 300; }.toolbar-mic-button { display: grid; place-items: center; width: 56px; min-height: 54px; color: #3e4355; background: #fff; border: 1px solid #e5e5ec; border-radius: 12px; box-shadow: 0 3px 8px rgba(31, 26, 66, .05); }.toolbar-mic-button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }.toolbar-mic-button.listening { color: #fff; background: var(--brand); }
 
-.content { flex: 1; min-height: 0; padding: 0; margin: 0 40px 32px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; background: #fff; border: 1px solid #e5e5eb; border-radius: 18px; box-shadow: none; backdrop-filter: none; }.section-heading { display: none; }.task-list { min-height: 0; align-content: start; gap: 9px; padding: 14px; padding-bottom: 24px; }
+.content { flex: 1; min-height: 0; padding: 0; margin: 18px 40px 32px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; background: #fff; border: 1px solid #e5e5eb; border-radius: 18px; box-shadow: none; backdrop-filter: none; }.section-heading { display: none; }.task-list { min-height: 0; align-content: start; gap: 9px; padding: 14px; padding-bottom: 24px; }
 .task-item { border-color: #ebebf0; border-radius: 14px; box-shadow: 0 3px 12px rgba(32, 27, 68, .045); }.check-button { color: var(--brand); background: #f0ebff; border-color: #d9cbff; }.task-item.done .check-button, .check-button.completed-today { background: var(--brand); border-color: var(--brand); }
 .empty-state { min-height: clamp(360px, 49vh, 570px); align-content: center; gap: 10px; padding: 28px 18px; color: #788095; }.empty-illustration { display: grid; place-items: center; width: 118px; height: 118px; margin-bottom: 7px; color: #a487fa; background: radial-gradient(circle at 35% 30%, #f8f5ff, #eee8ff); border-radius: 50%; box-shadow: inset 0 0 30px rgba(137, 91, 238, .04); font-size: 4.15rem; font-weight: 750; }.empty-state strong { color: var(--ink); font-size: 1.35rem; letter-spacing: -.035em; }.empty-state p { max-width: 480px; font-size: .86rem; }.empty-add-button { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; margin-top: 16px; padding: 0 20px; color: #fff; background: linear-gradient(135deg, #7048e7, #5627cd); border-radius: 11px; box-shadow: 0 8px 16px rgba(94, 47, 210, .18); font-size: .82rem; font-weight: 700; }
 .bottom-tabs { display: none; }
 
 @media (max-width: 800px) {
-  .app-shell { display: flex; flex-direction: column; height: 100dvh; }.sidebar { display: none; }.app-header { min-height: 78px; padding: 0 20px; }.app-header h1 { font-size: 1.65rem; }.header-actions { gap: 12px; }.notification-button { display: none; }.header-logout-button { min-height: 38px; padding: 0 14px; font-size: .8rem; }.toolbar { align-items: stretch; padding: 22px 20px 28px; }.task-search { width: 100%; min-height: 56px; }.toolbar-actions { gap: 10px; }.new-task-button { min-height: 56px; padding: 0 15px; font-size: .9rem; }.new-task-button span { font-size: 1.5rem; }.toolbar-mic-button { width: 56px; min-height: 56px; }.content { flex: 1; min-height: 0; margin: 0 20px 24px; border-radius: 18px; }.empty-state { min-height: calc(100dvh - 244px); }.empty-illustration { width: 124px; height: 124px; font-size: 4.3rem; }.empty-state strong { font-size: 1.45rem; }
+  .app-shell { display: flex; flex-direction: column; height: 100dvh; }.sidebar { display: none; }.app-header { min-height: 78px; padding: 0 20px; }.app-header h1 { font-size: 1.65rem; }.header-actions { gap: 12px; }.notification-button { display: none; }.header-logout-button { min-height: 38px; padding: 0 14px; font-size: .8rem; }.toolbar { align-items: stretch; padding: 22px 20px 28px; }.task-search { width: 100%; min-height: 56px; }.toolbar-actions { gap: 10px; }.new-task-button { min-height: 56px; padding: 0 15px; font-size: .9rem; }.new-task-button span { font-size: 1.5rem; }.toolbar-mic-button { width: 56px; min-height: 56px; }.content { flex: 1; min-height: 0; margin: 14px 20px 24px; border-radius: 18px; }.empty-state { min-height: calc(100dvh - 244px); }.empty-illustration { width: 124px; height: 124px; font-size: 4.3rem; }.empty-state strong { font-size: 1.45rem; }
 }
 
-@media (max-width: 540px) { .toolbar { display: grid; }.task-search { width: 100%; }.toolbar-actions { justify-content: space-between; }.new-task-button { flex: 1; justify-content: center; }.content { margin: 0 12px 18px; }.app-header { padding: 0 16px; }.toolbar { padding-right: 16px; padding-left: 16px; } }
+@media (max-width: 540px) { .toolbar { display: grid; }.task-search { width: 100%; }.toolbar-actions { justify-content: space-between; }.new-task-button { flex: 1; justify-content: center; }.content { margin: 12px 12px 18px; }.app-header { padding: 0 16px; }.toolbar { padding-right: 16px; padding-left: 16px; } }
 
 /* Reminder editor — compact dialog matching the tracker visual language. */
 .priority-picker.reminder-dialog {
@@ -1432,11 +1432,15 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
   background: linear-gradient(135deg, #dc4c3e, #b23327);
 }
 
+.voice-toast-notification {
+  background: linear-gradient(135deg, #6d43e8, #5125c4);
+}
+
 /* Priority-grouped task list — colorful bordered cards matching the reference design */
 .priority-groups {
   display: grid;
-  gap: 22px;
-  padding-bottom: 14px;
+  gap: 12px;
+  padding-bottom: 10px;
 }
 
 .priority-group {
@@ -1475,11 +1479,11 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 
 .priority-group-header {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  grid-template-columns: 38px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
-  padding: 18px 20px;
+  padding: 12px 16px;
   color: var(--ink);
   background: transparent;
   border: 0;
@@ -1493,15 +1497,15 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 .priority-group-icon {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   color: #fff;
   border-radius: 999px;
 }
 
 .priority-group-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .priority-group-icon.priority-high { background: #dc4c3e; }
@@ -1594,8 +1598,8 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 /* Compact rows inside priority groups, overriding the larger card-style rows */
 .priority-group-list.task-list {
   display: grid;
-  gap: 8px;
-  padding: 0 14px 14px;
+  gap: 6px;
+  padding: 0 10px 10px;
   border-radius: 0;
   overflow: visible;
 }
@@ -1603,8 +1607,8 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 .priority-group-list .task-item {
   grid-template-columns: 26px minmax(0, 1fr) auto;
   gap: 12px;
-  min-height: 56px;
-  padding: 10px 14px;
+  min-height: 52px;
+  padding: 8px 12px;
   background: #fff;
   border: 1px solid #eee9f4;
   border-radius: 12px;
@@ -1702,9 +1706,10 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 
 /* Pomodoro timer widget — sits in the sidebar's open space below the nav links */
 .pomodoro-widget {
+  order: 2;
   display: grid;
   gap: 12px;
-  margin: 14px 4px 6px;
+  margin: auto 4px 6px;
   padding: 18px 16px;
   background: linear-gradient(160deg, #faf8ff, #f3efff);
   border: 1px solid #ece4ff;
@@ -1784,6 +1789,7 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 
 /* Daily log widget — "Що робив сьогодні?" list in the sidebar's open space */
 .daily-log-widget {
+  order: 1;
   display: grid;
   gap: 10px;
   margin: 10px 4px 6px;
@@ -1808,8 +1814,7 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
   padding: 0;
   list-style: none;
   counter-reset: daily-log;
-  max-height: 371px;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .daily-log-list:empty {
@@ -1890,8 +1895,27 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 
 .daily-log-actions {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas:
+    "add add add"
+    "clear copy mic";
   gap: 8px;
+}
+
+.daily-log-add {
+  grid-area: add;
+}
+
+.daily-log-clear {
+  grid-area: clear;
+}
+
+.daily-log-copy {
+  grid-area: copy;
+}
+
+.daily-log-mic {
+  grid-area: mic;
 }
 
 .daily-log-button {
@@ -1921,6 +1945,40 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 .daily-log-mic {
   width: 40px;
   padding: 0;
+}
+
+.daily-log-copy {
+  width: 40px;
+  padding: 0;
+  color: var(--brand);
+  border-color: #ece4ff;
+}
+
+.daily-log-copy svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.daily-log-copy:hover {
+  color: #fff;
+  background: var(--brand);
+  border-color: transparent;
+}
+
+.daily-log-clear {
+  color: #b23327;
+  border-color: #f1d1ce;
+}
+
+.daily-log-clear:hover {
+  color: #fff;
+  background: #dc4c3e;
+  border-color: #dc4c3e;
 }
 
 .daily-log-mic svg {
@@ -2018,6 +2076,10 @@ html[data-theme="dark"] .pomodoro-widget.on-break .pomodoro-start { background: 
 
 /* Workspace header + toolbar */
 html[data-theme="dark"] .app-header { background: rgba(10, 13, 22, 0.7); border-bottom-color: rgba(255, 255, 255, 0.07); }
+html[data-theme="dark"] .header-actions .theme-link { color: #c7cce0; background: #171d2c; border-color: #2d3650; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.22); }
+html[data-theme="dark"] .header-actions .theme-link:hover { color: #fff; background: #20283a; }
+html[data-theme="dark"] .header-actions .notif-permission-button { color: #cdb8ff; background: rgba(109, 94, 248, 0.16); border-color: rgba(109, 94, 248, 0.32); }
+html[data-theme="dark"] .header-actions .notif-permission-button:disabled { color: #aeb5ca; background: #171d2c; border-color: #2d3650; }
 html[data-theme="dark"] .notification-button { color: var(--ink); }
 html[data-theme="dark"] .notification-button span { border-color: var(--bg); }
 html[data-theme="dark"] .task-search { color: #aeb4c6; background: #141926; border-color: rgba(255, 255, 255, 0.09); }
