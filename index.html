@@ -89,9 +89,9 @@
       <section class="workspace">
         <header class="app-header">
           <div class="header-actions">
-            <button class="notif-permission-button" id="notifPermissionButton" type="button" hidden></button>
-            <button class="theme-link" id="themeToggleButton" type="button"><span class="theme-link-icon" aria-hidden="true">☾</span><span class="theme-link-label">Темна тема</span> <span aria-hidden="true">›</span></button>
-            <button class="new-task-button" id="addButton" type="button"><span aria-hidden="true">＋</span>Нова задача</button>
+            <button class="notif-permission-button" id="notifPermissionButton" type="button" aria-label="Керування сповіщеннями" title="Керування сповіщеннями" hidden></button>
+            <button class="theme-link" id="themeToggleButton" type="button" aria-label="Змінити тему" title="Змінити тему"><span class="theme-link-icon" aria-hidden="true">☾</span></button>
+            <button class="new-task-button" id="addButton" type="button" aria-label="Нова задача" title="Нова задача"><span aria-hidden="true">＋</span></button>
             <button class="toolbar-mic-button" id="navMicButton" type="button" aria-label="Додати голосом" title="Додати голосом">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" /><path d="M19 11a7 7 0 0 1-14 0" /><path d="M12 18v3" /><path d="M8 21h8" /></svg>
             </button>
@@ -143,6 +143,15 @@
             </svg>
           </button>
         </div>
+        <label class="input-label priority-editor-label" for="newTaskPriority">
+          Пріоритет
+          <select class="priority-editor-select" id="newTaskPriority" aria-label="Пріоритет нової задачі">
+            <option value="">Без пріоритету</option>
+            <option value="high">Високий — терміново</option>
+            <option value="medium">Середній — важливо</option>
+            <option value="low">Низький — можна зачекати</option>
+          </select>
+        </label>
         <label class="reminder-toggle" for="newReminderEnabled">
           <input id="newReminderEnabled" type="checkbox" />
           Додати нагадування

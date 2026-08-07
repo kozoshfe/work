@@ -265,6 +265,7 @@ const els = {
   navMicButton: document.querySelector("#navMicButton"),
   submitTaskButton: document.querySelector("#submitTaskButton"),
   taskInput: document.querySelector("#taskInput"),
+  newTaskPriority: document.querySelector("#newTaskPriority"),
   taskReminder: document.querySelector("#taskReminder"),
   newReminderEnabled: document.querySelector("#newReminderEnabled"),
   newReminderDay: document.querySelector("#newReminderDay"),
@@ -1175,13 +1176,19 @@ function updateNotifPermissionButton() {
   button.hidden = false;
   const permission = Notification.permission;
   if (permission === "granted") {
-    button.textContent = "🔔 Сповіщення увімкнено";
+    button.textContent = "🔔";
+    button.setAttribute("aria-label", "Сповіщення увімкнено");
+    button.title = "Сповіщення увімкнено";
     button.disabled = true;
   } else if (permission === "denied") {
-    button.textContent = "🔕 Сповіщення заблоковано — дозвольте в налаштуваннях сайту в браузері";
+    button.textContent = "🔕";
+    button.setAttribute("aria-label", "Сповіщення заблоковано");
+    button.title = "Сповіщення заблоковано";
     button.disabled = true;
   } else {
-    button.textContent = "🔔 Увімкнути сповіщення";
+    button.textContent = "🔔";
+    button.setAttribute("aria-label", "Увімкнути сповіщення");
+    button.title = "Увімкнути сповіщення";
     button.disabled = false;
   }
 }
@@ -1333,7 +1340,9 @@ async function addTask() {
     els.taskInput.focus();
     return;
   }
-  if (priorityParsed.priority) task.priority = priorityParsed.priority;
+  task.priority = hasPriority(els.newTaskPriority.value)
+    ? els.newTaskPriority.value
+    : (priorityParsed.priority || task.priority);
   task.reminderAt = parsedTitle.reminderAt || (els.newReminderEnabled.checked ? getNewReminderValue() : null);
   task.recurrence = task.reminderAt && els.taskRepeat.value !== "none"
     ? expandRecurrence(els.taskRepeat.value, new Date(task.reminderAt)) : null;
@@ -1341,6 +1350,7 @@ async function addTask() {
   state.tasks.push(task);
   scheduleNativeReminder(task);
   els.taskInput.value = "";
+  els.newTaskPriority.value = "";
   els.newReminderEnabled.checked = false;
   updateNewReminderVisibility();
   els.taskRepeat.value = "none";
@@ -1521,6 +1531,7 @@ function openTaskTitleEditor(task) {
 }
 
 function openTaskModal() {
+  els.newTaskPriority.value = "";
   els.taskModal.hidden = false;
   window.requestAnimationFrame(() => {
     els.taskModal.classList.add("open");
@@ -2811,6 +2822,8 @@ function applyThemeToggleLabel() {
   const label = els.themeToggleButton.querySelector(".theme-link-label");
   if (icon) icon.textContent = isDark ? "☼" : "☾";
   if (label) label.textContent = isDark ? "Світла тема" : "Темна тема";
+  els.themeToggleButton.setAttribute("aria-label", isDark ? "Увімкнути світлу тему" : "Увімкнути темну тему");
+  els.themeToggleButton.title = isDark ? "Увімкнути світлу тему" : "Увімкнути темну тему";
 }
 
 function setTheme(theme) {

@@ -1290,7 +1290,7 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 .toolbar { flex-shrink: 0; }
 .app-header { display: flex; align-items: center; justify-content: space-between; min-height: 96px; padding: 0 40px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.7); }
 .app-header h1 { margin: 0; font-size: clamp(1.65rem, 2.3vw, 2.05rem); letter-spacing: -.045em; }
-.header-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }.header-actions .notif-permission-button, .header-actions .theme-link, .header-actions .header-logout-button, .header-actions .toolbar-mic-button, .header-actions .new-task-button { min-height: 54px; border-radius: 12px; }.header-actions .notif-permission-button, .header-actions .theme-link, .header-actions .header-logout-button { font-size: .86rem; font-weight: 700; }.header-actions .notif-permission-button { width: auto; margin: 0; padding: 0 18px; white-space: nowrap; }.header-actions .theme-link { width: auto; margin: 0; padding: 0 18px; color: #555b6b; background: #fff; border: 1px solid #e5e5ec; box-shadow: 0 3px 8px rgba(31, 26, 66, .05); white-space: nowrap; }.header-actions .theme-link:hover { background: #faf8ff; }.header-actions .theme-link span:last-child { margin-left: 2px; }.header-actions .header-logout-button { padding: 0 18px; border-radius: 12px; }.notification-button { position: relative; width: 38px; height: 38px; color: #202439; background: transparent; font-size: 1.55rem; line-height: 1; }.notification-button span { position: absolute; top: 7px; right: 5px; width: 9px; height: 9px; background: #7651e8; border: 2px solid #fff; border-radius: 50%; }.header-logout-button { display: grid; place-items: center; min-height: 40px; padding: 0 18px; color: #6d43e8; background: #f3edff; border: 1px solid #e2d5ff; border-radius: 999px; font-size: .84rem; font-weight: 750; }.header-logout-button:hover { background: #ebe0ff; }
+.header-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }.header-actions .notif-permission-button, .header-actions .theme-link, .header-actions .header-logout-button, .header-actions .toolbar-mic-button, .header-actions .new-task-button { min-height: 54px; border-radius: 12px; }.header-actions .notif-permission-button, .header-actions .theme-link, .header-actions .header-logout-button { font-size: .86rem; font-weight: 700; }.header-actions .notif-permission-button { width: 54px; margin: 0; padding: 0; white-space: nowrap; font-size: 1.2rem; }.header-actions .theme-link { width: 54px; margin: 0; padding: 0; justify-content: center; color: #555b6b; background: #fff; border: 1px solid #e5e5ec; box-shadow: 0 3px 8px rgba(31, 26, 66, .05); }.header-actions .theme-link:hover { background: #faf8ff; }.header-actions .theme-link .theme-link-icon { font-size: 1.45rem; }.header-actions .header-logout-button { padding: 0 18px; border-radius: 12px; }.notification-button { position: relative; width: 38px; height: 38px; color: #202439; background: transparent; font-size: 1.55rem; line-height: 1; }.notification-button span { position: absolute; top: 7px; right: 5px; width: 9px; height: 9px; background: #7651e8; border: 2px solid #fff; border-radius: 50%; }.header-logout-button { display: grid; place-items: center; min-height: 40px; padding: 0 18px; color: #6d43e8; background: #f3edff; border: 1px solid #e2d5ff; border-radius: 999px; font-size: .84rem; font-weight: 750; }.header-logout-button:hover { background: #ebe0ff; }
 
 .toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 18px; padding: 36px 40px 38px; }.task-search { display: flex; align-items: center; width: min(330px, 42vw); min-height: 54px; padding: 0 15px; color: #62687a; background: #fff; border: 1px solid #e3e3eb; border-radius: 12px; box-shadow: 0 3px 7px rgba(31, 26, 66, .025); }.task-search span { font-family: Georgia, serif; font-size: 1.7rem; line-height: 1; transform: rotate(-20deg); }.task-search input { min-height: 44px; padding: 0 10px; background: transparent; border: 0; box-shadow: none; font-size: .88rem; }.task-search input:focus { box-shadow: none; }.toolbar-actions { display: flex; gap: 14px; }.new-task-button { display: flex; align-items: center; gap: 9px; min-height: 54px; padding: 0 20px; color: #fff; background: linear-gradient(135deg, #7048e7, #5627cd); border-radius: 12px; box-shadow: 0 8px 16px rgba(94, 47, 210, .18); font-size: .86rem; font-weight: 700; }.new-task-button span { font-size: 1.55rem; font-weight: 300; }.toolbar-mic-button { display: grid; place-items: center; width: 56px; min-height: 54px; color: #3e4355; background: #fff; border: 1px solid #e5e5ec; border-radius: 12px; box-shadow: 0 3px 8px rgba(31, 26, 66, .05); }.toolbar-mic-button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }.toolbar-mic-button.listening { color: #fff; background: var(--brand); }
 
@@ -1454,7 +1454,7 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 }
 
 .priority-group[data-priority-group="high"] {
-  background: linear-gradient(180deg, #fdf1f0 0%, #fff 130px);
+  background: linear-gradient(180deg, #fdf1f0 0%, #fff 65px);
   border-color: #f6d8d5;
   border-left-color: #dc4c3e;
 }
@@ -1483,7 +1483,7 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 12px 16px;
+  padding: 6px 16px;
   color: var(--ink);
   background: transparent;
   border: 0;
@@ -1497,15 +1497,15 @@ html[data-theme="dark"] .notif-permission-button:disabled { color: #7d8299; back
 .priority-group-icon {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 17px;
+  height: 17px;
   color: #fff;
   border-radius: 999px;
 }
 
 .priority-group-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 8px;
+  height: 8px;
 }
 
 .priority-group-icon.priority-high { background: #dc4c3e; }
@@ -2190,3 +2190,43 @@ html[data-theme="dark"] .calendar-reminder { color: #c3b3ff; background: rgba(97
 html[data-theme="dark"] .bottom-tabs { background: rgba(20, 25, 38, 0.85); border-color: rgba(255, 255, 255, 0.09); }
 html[data-theme="dark"] .tab-button.active { background: rgba(255, 255, 255, 0.08); }
 html[data-theme="dark"] .voice-toast { background: #1c1636; }
+
+/* Header shortcuts are intentionally icon-only, without card-like containers. */
+.header-actions .notif-permission-button,
+.header-actions .theme-link {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  min-height: 34px;
+  height: 34px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.header-actions .notif-permission-button { color: #6236dd; font-size: 1.05rem; }
+.header-actions .theme-link { color: #f3a715; }
+.header-actions .theme-link .theme-link-icon { font-size: 1.35rem; }
+.header-actions .notif-permission-button:hover,
+.header-actions .theme-link:hover { background: #f5f1ff; }
+.header-actions .notif-permission-button:disabled { color: #8b90a0; background: transparent; border: 0; }
+
+html[data-theme="dark"] .header-actions .notif-permission-button,
+html[data-theme="dark"] .header-actions .theme-link { background: transparent; border: 0; box-shadow: none; }
+html[data-theme="dark"] .header-actions .theme-link { color: #f3c05c; }
+html[data-theme="dark"] .header-actions .notif-permission-button:hover,
+html[data-theme="dark"] .header-actions .theme-link:hover { background: rgba(255, 255, 255, 0.08); }
+
+.header-actions .new-task-button {
+  justify-content: center;
+  width: 54px;
+  padding: 0;
+}
+
+.header-actions .new-task-button span {
+  font-size: 1.7rem;
+  font-weight: 700;
+}
