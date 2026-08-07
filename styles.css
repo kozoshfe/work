@@ -1368,6 +1368,7 @@ body { background: var(--bg); }
 .category-bookmarks .task-text::before { color: #e49524; background: #fff4e3; content: "♧"; font-size: 1.8rem; }
 .category-buy .task-text::before { color: #22a96b; background: #e7f8f0; content: "⌑"; }
 .category-laptops .task-text::before { color: #7041d6; background: #f1edff; content: "▰"; }
+.task-item-bug .task-text::before { color: #dc4c3e; background: #fdeceb; content: "🐞"; }
 .task-title-row { grid-column: 2; display: block; }.task-title-row .priority-dot { display: none; }
 .task-title { font-size: 1rem; font-weight: 750; line-height: 1.25; }
 .task-meta { grid-column: 2; margin-top: 4px; font-size: .78rem; font-weight: 650; }.task-category-meta::before { display: inline-block; width: 7px; height: 7px; margin-right: 6px; vertical-align: 1px; background: #3974d8; border-radius: 50%; content: ""; }.category-bookmarks .task-category-meta { color: #d98b1b; }.category-bookmarks .task-category-meta::before { background: #f0a02b; }.category-buy .task-category-meta { color: #15965b; }.category-buy .task-category-meta::before { background: #21b875; }.category-laptops .task-category-meta { color: #7146c9; }.category-laptops .task-category-meta::before { background: #7041d6; }
@@ -2118,6 +2119,7 @@ html[data-theme="dark"] .task-text::before { color: #8fb2f5; background: rgba(57
 html[data-theme="dark"] .category-bookmarks .task-text::before { color: #f3c07a; background: rgba(228, 149, 36, 0.16); }
 html[data-theme="dark"] .category-buy .task-text::before { color: #6fd6a4; background: rgba(34, 169, 107, 0.16); }
 html[data-theme="dark"] .category-laptops .task-text::before { color: #b79cf2; background: rgba(112, 65, 214, 0.18); }
+html[data-theme="dark"] .task-item-bug .task-text::before { color: #ff9186; background: rgba(220, 76, 62, 0.18); }
 html[data-theme="dark"] .task-reminder-meta { color: #c3b3ff; background: rgba(97, 52, 207, 0.22); border-color: rgba(154, 122, 240, 0.35); }
 html[data-theme="dark"] .task-reminder-meta.overdue { color: #ff9186; background: rgba(220, 76, 62, 0.2); border-color: rgba(220, 76, 62, 0.4); }
 html[data-theme="dark"] .task-item.overdue { background: rgba(220, 76, 62, 0.1); }

@@ -229,6 +229,7 @@ const els = {
   newReminderHour: document.querySelector("#newReminderHour"),
   newReminderMinute: document.querySelector("#newReminderMinute"),
   taskRepeat: document.querySelector("#taskRepeat"),
+  newTaskPriority: document.querySelector("#newTaskPriority"),
   taskModal: document.querySelector("#taskModal"),
   taskList: document.querySelector("#taskList"),
   taskSearch: document.querySelector("#taskSearch"),
@@ -1250,6 +1251,7 @@ async function addTask() {
     return;
   }
   if (priorityParsed.priority) task.priority = priorityParsed.priority;
+  else if (els.newTaskPriority && hasPriority(els.newTaskPriority.value)) task.priority = els.newTaskPriority.value;
   task.reminderAt = parsedTitle.reminderAt || (els.newReminderEnabled.checked ? getNewReminderValue() : null);
   task.recurrence = task.reminderAt && els.taskRepeat.value !== "none"
     ? expandRecurrence(els.taskRepeat.value, new Date(task.reminderAt)) : null;
@@ -1260,6 +1262,7 @@ async function addTask() {
   els.newReminderEnabled.checked = false;
   updateNewReminderVisibility();
   els.taskRepeat.value = "none";
+  if (els.newTaskPriority) els.newTaskPriority.value = "";
   closeTaskModal();
   render();
   await saveState();
@@ -1437,6 +1440,13 @@ function openTaskTitleEditor(task) {
 }
 
 function openTaskModal() {
+  if (els.newTaskPriority && !els.newTaskPriority.dataset.populated) {
+    els.newTaskPriority.append(
+      ...Object.entries(PRIORITIES).map(([priority, details]) => new Option(details.label, priority)),
+    );
+    els.newTaskPriority.dataset.populated = "true";
+  }
+  if (els.newTaskPriority) els.newTaskPriority.value = "";
   els.taskModal.hidden = false;
   window.requestAnimationFrame(() => {
     els.taskModal.classList.add("open");
@@ -2056,7 +2066,8 @@ function makeTaskItem(task, mode) {
   const isOverdue = Boolean(task.reminderAt) && !task.done && !completedToday && !notReadyYet
     && mode !== "trash" && mode !== "archive"
     && new Date(task.reminderAt).getTime() < Date.now();
-  item.className = `task-item${task.done ? " done" : ""}${isOverdue ? " overdue" : ""}`;
+  const isBugTask = /баг/i.test(task.title);
+  item.className = `task-item${task.done ? " done" : ""}${isOverdue ? " overdue" : ""}${isBugTask ? " task-item-bug" : ""}`;
 
   const checkButton = document.createElement("button");
   checkButton.className = `check-button${completedToday ? " completed-today" : ""}${notReadyYet ? " not-ready-yet" : ""}`;
