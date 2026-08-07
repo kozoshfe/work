@@ -3,7 +3,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_nXxnpG6C_RO9mVqcYEt1mg_Z9Z-dpDr";
 const SUPABASE_TABLE = "work_tasks";
 const LEGACY_STORAGE_KEY = "work-app-state";
 const PENDING_STORAGE_KEY = "work-app-pending-state";
-const APP_VERSION = "1";
+const APP_VERSION = "4";
 const APP_VERSION_KEY = "work-app-version";
 const DOUBLE_TAP_DELAY_MS = 280;
 const PRIORITIES = {
@@ -599,6 +599,7 @@ async function openApp() {
   document.body.classList.remove("access-locked");
   document.body.classList.remove("auth-pending");
   els.accessScreen.hidden = true;
+  checkDueReminders();
   requestReminderNotificationPermission();
   await processNativeNotificationAction();
 }
@@ -1107,6 +1108,10 @@ function rescheduleNativeReminders() {
 // system-level notifications with sound, so this fallback only runs when the
 // app is used as a regular web page / installed PWA without that bridge.
 const REMINDER_ALERT_INTERVAL_MS = 20000;
+// A browser can delay timers in a background tab. Keep a short grace period
+// so a reminder still fires after the tab wakes up, without alerting for old
+// overdue tasks when the app is opened days later.
+const REMINDER_ALERT_GRACE_MS = 2 * 60 * 1000;
 const firedReminderKeys = new Set();
 let reminderAudioContext = null;
 // Task-deadline notification sound — plays the user-provided mp3.
@@ -1196,12 +1201,7 @@ function updateNotifPermissionButton() {
 els.notifPermissionButton?.addEventListener("click", () => {
   if (!("Notification" in window)) return;
   if (Notification.permission === "granted") {
-    void showSystemNotification("Перевірка сповіщень", {
-      body: "Сповіщення macOS працюють.",
-      icon: "icons/icon-192.png",
-      tag: "notification-test",
-    });
-    showVoiceToast("Тестове сповіщення надіслано.", "notification");
+    showNotificationTest();
     return;
   }
   if (Notification.permission === "denied") {
@@ -1211,14 +1211,26 @@ els.notifPermissionButton?.addEventListener("click", () => {
   Notification.requestPermission().then((permission) => {
     updateNotifPermissionButton();
     if (permission === "granted") {
-      void showSystemNotification("Перевірка сповіщень", {
-        body: "Сповіщення macOS увімкнено.",
-        icon: "icons/icon-192.png",
-        tag: "notification-test",
-      });
+      showNotificationTest();
     }
   }).catch(() => {});
 });
+
+// Deliberately use the direct browser API for a user-initiated test. Safari
+// can require this call to happen directly in the click handler, while timed
+// reminders use the service worker path below.
+function showNotificationTest() {
+  // A user click is the most reliable moment to verify both channels in
+  // Chrome, so test audio and system notifications together.
+  playReminderSound();
+  void showSystemNotification("Перевірка сповіщень", {
+    body: "Якщо ви це бачите — сповіщення macOS працюють.",
+    icon: new URL("icons/icon-192.png", window.location.href).href,
+    tag: `notification-test-${Date.now()}`,
+    requireInteraction: true,
+  });
+  showVoiceToast("Тестовий звук і системне сповіщення надіслано.", "notification");
+}
 
 function highlightReminderTaskInView(taskId) {
   const item = els.taskList?.querySelector(`.task-item[data-task-id="${CSS.escape(String(taskId))}"]`)
@@ -1262,7 +1274,7 @@ function showReminderBrowserNotification(task) {
   void showSystemNotification("Нагадування", {
     body: task.title,
     tag: `reminder-${task.id}`,
-    icon: "icons/icon-192.png",
+    icon: new URL("icons/icon-192.png", window.location.href).href,
     data: { taskId: task.id },
   });
 }
@@ -1277,7 +1289,7 @@ function showPomodoroBrowserNotification(mode) {
   void showSystemNotification("Помодоро", {
     body: isBreak ? "Перерва розпочалася — 15 хвилин." : "Робочий цикл розпочато — 45 хвилин.",
     tag: "pomodoro-timer",
-    icon: "icons/icon-192.png",
+    icon: new URL("icons/icon-192.png", window.location.href).href,
   });
 }
 
@@ -1330,7 +1342,7 @@ function checkDueReminders() {
   // matching the check interval) — not for every task that's simply overdue,
   // which previously made the purple toast pop up at random-feeling moments
   // for old/stale reminders whenever the app happened to check or reload.
-  const windowMs = REMINDER_ALERT_INTERVAL_MS * 2;
+  const windowMs = REMINDER_ALERT_GRACE_MS;
   state.tasks.forEach((task) => {
     if (!task.reminderAt || task.done) return;
     const dueTime = new Date(task.reminderAt).getTime();
