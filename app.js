@@ -477,10 +477,9 @@ function submitDailyLogInput() {
   closeDailyLogInput();
 }
 
-// Voice dictation for the daily log runs "continuously": each pause in
-// speech finalizes one result, which becomes its own list entry, so saying
-// "Чистив нц" ... pause ... "Писав репорт" adds two separate items in one
-// mic session. Tap the mic again to stop listening.
+// Voice dictation adds one finalized phrase per explicit button press.
+// Do not restart recognition after a pause: automatic restarts can make the
+// browser's microphone indicator appear unexpectedly.
 function setupDailyLogSpeechRecognition() {
   if (!els.dailyLogMicButton) return;
   if (!SpeechRecognition) {
@@ -490,7 +489,7 @@ function setupDailyLogSpeechRecognition() {
 
   dailyLogRecognition = new SpeechRecognition();
   dailyLogRecognition.lang = "uk-UA";
-  dailyLogRecognition.continuous = true;
+  dailyLogRecognition.continuous = false;
   dailyLogRecognition.interimResults = false;
   dailyLogRecognition.maxAlternatives = 1;
 
@@ -518,16 +517,6 @@ function setupDailyLogSpeechRecognition() {
   });
 
   dailyLogRecognition.addEventListener("end", () => {
-    if (dailyLogListening) {
-      // Some browsers auto-stop after each pause even with continuous=true —
-      // restart transparently so it truly feels like one ongoing session.
-      try {
-        dailyLogRecognition.start();
-        return;
-      } catch (error) {
-        // Fall through to a full stop below.
-      }
-    }
     dailyLogListening = false;
     els.dailyLogMicButton.classList.remove("listening");
     playMicStopSound();
@@ -2779,29 +2768,6 @@ els.taskInput.addEventListener("keydown", (event) => {
 });
 
 function handleGlobalShortcut(event) {
-  const isF3 = event.key === "F3" || event.code === "F3" || event.keyCode === 114;
-  const isEditable = event.target instanceof HTMLElement
-    && (event.target.matches("input, textarea, select") || event.target.isContentEditable);
-  const hasModifier = event.ctrlKey || event.altKey || event.metaKey;
-  const isDailyLogHotkey = event.key === "1" && !isEditable && !hasModifier;
-  const isTaskHotkey = event.key === "2" && !isEditable && !hasModifier;
-
-  if ((isF3 || isTaskHotkey) && !event.repeat) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (navMicTapTimer) {
-      window.clearTimeout(navMicTapTimer);
-      navMicTapTimer = null;
-    }
-    addVoiceTask();
-    return;
-  }
-  if (isDailyLogHotkey && !event.repeat) {
-    event.preventDefault();
-    event.stopPropagation();
-    toggleDailyLogVoiceInput();
-    return;
-  }
   if (event.key === "Escape" && !els.taskModal.hidden) closeTaskModal();
   if (event.key === "Escape" && priorityPickerTaskId) closePriorityPicker();
 }
